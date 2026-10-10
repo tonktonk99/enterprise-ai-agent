@@ -340,3 +340,4 @@ class Run:
             {"control": "Testing", "framework": "SOC2 CC8.1", "evidence": "Tests passed", "status": "met"},
         ]
         self._update_stage("monitor", "passed", "Compliance checks generated.", int((time.time() - t0) * 1000), {})
+
