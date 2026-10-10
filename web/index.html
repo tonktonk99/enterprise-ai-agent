@@ -1,297 +1,127 @@
 <!doctype html>
 <html lang="th">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="color-scheme" content="light">
-    <meta name="theme-color" content="#f5f6f8">
-    <title>Forge — Multi-Agent Engineering Console</title>
-    <link rel="stylesheet" href="/assets/style.css">
-    <script src="/assets/app.js" defer></script>
-  </head>
-  <body>
-    <a class="skip-link" href="#pipeline">ข้ามไปยัง Pipeline</a>
-    <div class="app-shell">
-      <aside class="sidebar">
-        <a class="brand" href="/" aria-label="Forge หน้าหลัก">
-          <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
-          <span class="brand-name">forge<span class="brand-period">.</span><small>AI SOFTWARE ENGINEER</small></span>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Forge AI — Software Engineer</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <script src="/assets/app.js" defer></script>
+</head>
+<body>
+  <div class="chat-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a class="brand" href="/">
+          <span class="brand-icon">✳</span>
+          <span class="brand-text">Forge <span class="badge">Local AI</span></span>
         </a>
-
-        <div class="workspace-label">WORKSPACE</div>
-        <div class="workspace-card">
-          <span class="repo-icon" aria-hidden="true">⌘</span>
-          <span class="workspace-details"><strong id="workspace-name">กำลังเชื่อมต่อ…</strong><small>Local repository</small></span>
-          <span class="workspace-chevron" aria-hidden="true">⌄</span>
+        <button id="new-chat-btn" class="icon-btn" title="งานใหม่">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          สร้างงานใหม่
+        </button>
+      </div>
+      
+      <div class="sidebar-scrollable">
+        <div class="sidebar-section">
+          <h3>ประวัติการทำงาน</h3>
+          <ul id="history-list" class="history-list">
+            <li class="empty-history">ยังไม่มีประวัติ</li>
+          </ul>
         </div>
+      </div>
 
-        <div class="nav-caption">เครื่องมือ</div>
-        <nav class="navigation" aria-label="เมนูหลัก">
-          <a class="nav-item active" href="#overview" aria-current="page"><span class="nav-symbol" aria-hidden="true">⌂</span> ภาพรวม <span class="nav-current"></span></a>
-          <a class="nav-item" href="#pipeline"><span class="nav-symbol" aria-hidden="true">✳</span> Pipeline</a>
-          <a class="nav-item" href="#monitor"><span class="nav-symbol" aria-hidden="true">▦</span> Monitor</a>
-          <a class="nav-item" href="#org-chat"><span class="nav-symbol" aria-hidden="true">▤</span> ข้อมูลองค์กร</a>
-          <a class="nav-item" href="#security"><span class="nav-symbol" aria-hidden="true">◈</span> ความปลอดภัย</a>
-        </nav>
-
-        <div class="sidebar-bottom">
-          <section class="approval-card">
-            <div class="approval-card-top"><span class="approval-card-icon" aria-hidden="true">✓</span><span>คุณเป็นคนตัดสินใจ</span></div>
-            <p>7 agents เตรียมแผน โค้ด ผลทดสอบ และผลสแกนให้ตรวจ จะไม่แก้ไฟล์หรือ deploy จนกว่าคุณจะอนุมัติ</p>
-          </section>
-          <div class="sidebar-footer"><span class="local-indicator"></span><span>ทำงานบนเครื่องของคุณ</span><span class="version">v2</span></div>
-        </div>
-      </aside>
-
-      <main class="main" id="overview">
-        <header class="topbar">
-          <div class="breadcrumb"><span>Workspace</span><span class="breadcrumb-divider">/</span><strong>Pipeline console</strong></div>
-          <div class="topbar-right">
-            <div class="repo-pill"><span class="repo-pill-dot"></span><span id="provider-status">กำลังตรวจสอบโมเดล</span></div>
-            <span class="topbar-divider"></span>
-            <span class="user-avatar" role="img" aria-label="ผู้ใช้">A</span>
+      <div class="sidebar-footer">
+        <div class="status-indicator">
+          <span class="status-dot"></span>
+          <div class="status-text">
+            <strong id="workspace-name">เชื่อมต่อ Workspace...</strong>
+            <small id="provider-status">กำลังโหลดโมเดล</small>
           </div>
-        </header>
-
-        <div class="page-content">
-          <section class="hero">
-            <div class="hero-copy">
-              <div class="eyebrow"><span class="eyebrow-spark" aria-hidden="true">✳</span> 7-AGENT ENGINEERING PIPELINE</div>
-              <h1>ไอเดียของคุณ<br><span>ผ่านการตรวจครบก่อนเป็นโค้ด</span></h1>
-              <p>Planner → Coder → Reviewer → Tester → Security → Deployer → Monitor<br class="desktop-break">ใช้ AI เฉพาะเมื่อจำเป็น ลด token · ทดสอบใน sandbox · คุณอนุมัติก่อนทุกครั้ง</p>
-            </div>
-            <div class="hero-art" aria-hidden="true">
-              <div class="energy-field"></div>
-              <span class="energy-particle particle-one"></span>
-              <span class="energy-particle particle-two"></span>
-              <span class="energy-particle particle-three"></span>
-              <div class="orbit orbit-outer"></div>
-              <div class="orbit orbit-inner"></div>
-              <div class="orbit-core">
-                <span class="core-aura"></span>
-                <span class="core-sphere"><span class="core-spark">✳</span></span>
-              </div>
-              <span class="orbit-node node-plan">01 <i>Plan</i></span>
-              <span class="orbit-node node-build">02 <i>Build</i></span>
-              <span class="orbit-node node-review">03 <i>Verify</i></span>
-              <span class="orbit-dot"></span>
-            </div>
-            <div class="hero-note"><span class="hero-note-icon" aria-hidden="true">◈</span><span>Human-in-the-loop · คุณอนุมัติทุกการเปลี่ยนแปลง</span></div>
-          </section>
-
-          <section class="workflow-strip" id="workflow" aria-label="ขั้นตอนการทำงาน">
-            <div class="workflow-step"><span class="step-number step-active">01</span><span><strong>บอกสิ่งที่ต้องการ</strong><small>อธิบายงานสั้น ๆ</small></span></div>
-            <span class="step-connector"></span>
-            <div class="workflow-step"><span class="step-number">02</span><span><strong>7 agents ทำงาน</strong><small>ใช้ AI เมื่อจำเป็น ลด token</small></span></div>
-            <span class="step-connector"></span>
-            <div class="workflow-step"><span class="step-number">03</span><span><strong>ทดสอบ + สแกน</strong><small>Sandbox · SAST · secrets</small></span></div>
-            <span class="step-connector"></span>
-            <div class="workflow-step"><span class="step-number">04</span><span><strong>คุณอนุมัติ</strong><small>ตรวจ diff ก่อนใช้</small></span></div>
-          </section>
-
-          <section class="task-section" id="pipeline">
-            <div class="section-title">
-              <div><span class="section-kicker">START A PIPELINE RUN</span><h2>วันนี้อยากให้ Forge ช่วยอะไร?</h2></div>
-              <span class="task-limit">สูงสุด 3,000 ตัวอักษร</span>
-            </div>
-            <div class="composer">
-              <label class="sr-only" for="task-input">รายละเอียดงานที่ต้องการ</label>
-              <textarea id="task-input" maxlength="3000" placeholder="เช่น เพิ่มระบบตรวจสอบอีเมลในหน้าสมัครสมาชิก พร้อม test cases สำหรับข้อมูลที่ไม่ถูกต้อง…"></textarea>
-              <div class="composer-bottom">
-                <div class="composer-meta"><span class="composer-safe-icon" aria-hidden="true">◈</span><span>ส่งเฉพาะไฟล์ที่จำเป็นให้โมเดลในเครื่อง</span><span class="meta-separator">·</span><span id="character-count">0 / 3,000</span></div>
-                <button id="run-button" class="primary-button" type="button"><span class="button-spark" aria-hidden="true">✳</span><span>เริ่ม Pipeline</span><span class="button-arrow" aria-hidden="true">→</span></button>
-              </div>
-            </div>
-            <div class="prompt-suggestions"><span class="suggestion-label">ลองเริ่มจาก</span><button class="suggestion-chip" type="button" data-prompt="ช่วยสำรวจโครงสร้างโปรเจกต์ และแนะนำจุดที่ควรปรับปรุง 3 ข้อ โดยยังไม่แก้ไฟล์">สำรวจโปรเจกต์</button><button class="suggestion-chip" type="button" data-prompt="ช่วยเพิ่มการตรวจสอบข้อมูลในฟอร์มที่มีอยู่ พร้อมเสนอ test cases สำหรับกรณีปกติและกรณีผิดพลาด">เพิ่ม validation</button><button class="suggestion-chip" type="button" data-prompt="ช่วยตรวจหา bug ที่เกี่ยวข้องกับงานนี้ เสนอวิธีแก้ที่กระทบไฟล์น้อยที่สุด พร้อมเสนอการทดสอบ">ช่วยหา bug</button></div>
-          </section>
-
-          <div id="error-banner" class="error-banner" role="alert" hidden></div>
-          <div id="run-live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
-
-          <section id="run-section" class="run-section" aria-labelledby="run-title" hidden>
-            <div class="result-title">
-              <div class="run-title-copy">
-                <span class="section-kicker">PIPELINE RUN <span id="run-id" class="run-id"></span></span>
-                <h2 id="run-title">ผลการทำงานของ 7 agents</h2>
-                <p id="run-task" class="run-task"></p>
-                <p id="run-meta" class="run-meta"></p>
-              </div>
-              <div class="run-title-actions">
-                <span id="run-status" class="status-badge"></span>
-                <a id="patch-link" class="patch-link" href="#" download hidden>ดาวน์โหลด .patch</a>
-              </div>
-            </div>
-
-            <ol id="pipeline-tracker" class="pipeline-tracker" aria-label="สถานะ pipeline 7 ขั้นตอน"></ol>
-
-            <div id="run-error" class="run-error" role="alert" hidden></div>
-
-            <div class="run-tabs-card">
-              <div class="run-tabs" role="tablist" aria-label="รายละเอียดผลการรัน">
-                <button class="run-tab" type="button" role="tab" id="tab-plan" aria-controls="panel-plan" aria-selected="true">แผน</button>
-                <button class="run-tab" type="button" role="tab" id="tab-diff" aria-controls="panel-diff" aria-selected="false" tabindex="-1">Diff <span id="badge-diff" class="tab-badge" hidden></span></button>
-                <button class="run-tab" type="button" role="tab" id="tab-tests" aria-controls="panel-tests" aria-selected="false" tabindex="-1">ผลทดสอบ <span id="badge-tests" class="tab-badge" hidden></span></button>
-                <button class="run-tab" type="button" role="tab" id="tab-security" aria-controls="panel-security" aria-selected="false" tabindex="-1">ความปลอดภัย <span id="badge-security" class="tab-badge" hidden></span></button>
-                <button class="run-tab" type="button" role="tab" id="tab-compliance" aria-controls="panel-compliance" aria-selected="false" tabindex="-1">Compliance</button>
-                <button class="run-tab" type="button" role="tab" id="tab-provenance" aria-controls="panel-provenance" aria-selected="false" tabindex="-1">Provenance</button>
-                <button class="run-tab" type="button" role="tab" id="tab-tokens" aria-controls="panel-tokens" aria-selected="false" tabindex="-1">Token &amp; ต้นทุน</button>
-              </div>
-
-              <div class="run-panel" role="tabpanel" id="panel-plan" aria-labelledby="tab-plan" tabindex="0">
-                <div id="plan-empty" class="empty-message">Planner ยังไม่ได้สร้างแผน</div>
-                <div id="plan-body" hidden>
-                  <div class="plan-head">
-                    <div><span class="panel-label">เป้าหมาย</span><p id="plan-goal" class="plan-goal"></p></div>
-                    <span id="plan-risk" class="risk-badge"></span>
-                  </div>
-                  <div class="panel-grid">
-                    <div><h3 class="panel-heading">ขั้นตอน</h3><ol id="plan-steps" class="plan-list"></ol></div>
-                    <div><h3 class="panel-heading">เกณฑ์ยอมรับ (Acceptance)</h3><ul id="plan-acceptance" class="check-list"></ul></div>
-                  </div>
-                  <div class="panel-grid">
-                    <div><h3 class="panel-heading">ไฟล์ที่อ่าน</h3><ul id="plan-files-read" class="path-list"></ul></div>
-                    <div><h3 class="panel-heading">ไฟล์ที่จะสร้าง</h3><ul id="plan-files-create" class="path-list"></ul></div>
-                  </div>
-                </div>
-                <div id="review-box" class="review-box" hidden>
-                  <h3 class="panel-heading">ผลรีวิวจาก Reviewer <span id="review-status" class="status-badge"></span></h3>
-                  <ul id="review-notes" class="plain-list"></ul>
-                </div>
-              </div>
-
-              <div class="run-panel" role="tabpanel" id="panel-diff" aria-labelledby="tab-diff" tabindex="0" hidden>
-                <ul id="file-summary" class="file-summary"></ul>
-                <div id="diff-view" class="diff-view"></div>
-              </div>
-
-              <div class="run-panel" role="tabpanel" id="panel-tests" aria-labelledby="tab-tests" tabindex="0" hidden>
-                <div id="tests-empty" class="empty-message">Tester ยังไม่มีผลทดสอบ</div>
-                <div id="tests-body" hidden>
-                  <dl id="tests-summary" class="kv-grid"></dl>
-                  <h3 class="panel-heading">Output (ส่วนท้าย)</h3>
-                  <pre id="tests-output" class="output-pre" tabindex="0"></pre>
-                </div>
-              </div>
-
-              <div class="run-panel" role="tabpanel" id="panel-security" aria-labelledby="tab-security" tabindex="0" hidden>
-                <div id="findings-summary" class="findings-summary"></div>
-                <ul id="findings-list" class="findings-list"></ul>
-              </div>
-
-              <div class="run-panel" role="tabpanel" id="panel-compliance" aria-labelledby="tab-compliance" tabindex="0" hidden>
-                <p class="disclaimer"><strong>หมายเหตุ:</strong> หลักฐานประกอบการควบคุม ไม่ใช่การรับรอง — ใช้ประกอบการตรวจของผู้ตรวจสอบเท่านั้น</p>
-                <div class="table-wrap">
-                  <table class="data-table">
-                    <caption class="sr-only">หลักฐานประกอบการควบคุม</caption>
-                    <thead><tr><th scope="col">Control</th><th scope="col">Framework</th><th scope="col">หลักฐาน</th><th scope="col">สถานะ</th></tr></thead>
-                    <tbody id="compliance-body"></tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div class="run-panel" role="tabpanel" id="panel-provenance" aria-labelledby="tab-provenance" tabindex="0" hidden>
-                <div id="provenance-empty" class="empty-message">Deployer ยังไม่ได้สร้าง manifest</div>
-                <div id="provenance-body" hidden>
-                  <dl id="provenance-hashes" class="hash-list"></dl>
-                  <div class="panel-grid">
-                    <div><h3 class="panel-heading">บันทึกการ deploy</h3><ul id="deploy-notes" class="plain-list"></ul></div>
-                    <div><h3 class="panel-heading">แผน rollback</h3><ol id="rollback-steps" class="plain-list"></ol></div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="run-panel" role="tabpanel" id="panel-tokens" aria-labelledby="tab-tokens" tabindex="0" hidden>
-                <div id="token-grid" class="kpi-grid"></div>
-                <p class="panel-note">Adaptive compute: ขั้นตอนที่ตรวจด้วยกฎ (SAST, secrets, syntax, policy) ไม่ใช้ AI จึงไม่เสีย token</p>
-              </div>
-            </div>
-
-            <div class="approve-bar">
-              <div class="approve-copy">
-                <strong id="approve-status">รอผลจาก pipeline…</strong>
-                <span>Forge จะเขียนไฟล์เฉพาะหลังคุณอนุมัติ และจะไม่ deploy เอง</span>
-              </div>
-              <label class="confirm-check"><input id="confirm-diff" type="checkbox" disabled> ฉันตรวจ diff แล้ว</label>
-              <div class="approve-actions">
-                <button id="reject-button" class="reject-button" type="button" disabled>ปฏิเสธ</button>
-                <button id="approve-button" class="approve-button" type="button" disabled>อนุมัติและนำไปใช้ <span aria-hidden="true">→</span></button>
-              </div>
-            </div>
-          </section>
-
-          <section id="monitor" class="monitor-section" aria-labelledby="monitor-title">
-            <div class="section-title">
-              <div><span class="section-kicker">MONITOR · ALL RUNS</span><h2 id="monitor-title">ภาพรวมการทำงาน</h2></div>
-              <button id="metrics-refresh" class="ghost-button" type="button">รีเฟรช</button>
-            </div>
-            <div id="kpi-grid" class="kpi-grid" aria-live="polite"></div>
-            <div class="monitor-grid">
-              <article class="result-card">
-                <div class="card-heading"><span class="card-icon security-icon" aria-hidden="true">◈</span><div><h3>Findings ตามระดับความรุนแรง</h3><p>รวมทุกการรัน</p></div></div>
-                <div id="severity-bars" class="severity-bars"></div>
-                <div id="status-chips" class="status-chips"></div>
-              </article>
-              <article class="result-card">
-                <div class="card-heading"><span class="card-icon plan-icon" aria-hidden="true">↺</span><div><h3>ประวัติการรัน</h3><p>ล่าสุด 20 รายการ · คลิกเพื่อเปิด</p></div><button id="history-refresh" class="ghost-button small" type="button" aria-label="รีเฟรชประวัติการรัน">↻</button></div>
-                <ul id="history-list" class="history-list"></ul>
-              </article>
-            </div>
-          </section>
-
-          <section id="org-chat" class="org-chat">
-            <div class="org-chat-heading">
-              <div class="org-chat-title">
-                <span class="org-chat-icon" aria-hidden="true">⌕</span>
-                <div><span class="section-kicker">PRIVATE KNOWLEDGE · LOCAL AI</span><h2>ถามข้อมูลในองค์กร</h2></div>
-              </div>
-              <span class="admin-only"><span></span> ผู้ดูแล · เครื่องนี้เท่านั้น</span>
-            </div>
-            <p class="org-chat-description">นำเข้า CSV ที่ได้รับอนุญาต แล้วถามคำถามจากข้อมูลโดยตรง ไฟล์และคำถามจะอยู่ในเครื่องนี้ ไม่ส่งไป AI ภายนอก</p>
-            <div class="dataset-bar">
-              <div class="dataset-summary"><span class="dataset-icon" aria-hidden="true">▤</span><div><strong id="dataset-status">ยังไม่มีชุดข้อมูล</strong><small id="dataset-detail">เริ่มจากไฟล์ CSV ที่คุณมีสิทธิ์ใช้งาน</small></div></div>
-              <div class="dataset-actions">
-                <input id="csv-input" type="file" accept=".csv,text/csv" hidden>
-                <button id="import-button" class="import-button" type="button">เลือกไฟล์ CSV</button>
-                <button id="clear-data-button" class="clear-data-button" type="button" hidden>ลบข้อมูลในเครื่อง</button>
-              </div>
-            </div>
-            <div id="allowed-fields" class="allowed-fields" hidden></div>
-            <details id="profile-panel" class="profile-panel" hidden>
-              <summary>วิเคราะห์ข้อมูล (ไม่ใช้ AI · 0 token)</summary>
-              <p id="profile-meta" class="panel-note"></p>
-              <div class="table-wrap">
-                <table class="data-table">
-                  <caption class="sr-only">โปรไฟล์ข้อมูลรายคอลัมน์</caption>
-                  <thead><tr><th scope="col">คอลัมน์</th><th scope="col">มีค่า</th><th scope="col">ค่าไม่ซ้ำ</th><th scope="col">ค่าที่พบบ่อย</th><th scope="col">ตัวเลข (min · max · mean)</th></tr></thead>
-                  <tbody id="profile-body"></tbody>
-                </table>
-              </div>
-            </details>
-            <div class="question-composer">
-              <label class="sr-only" for="org-question">ถามข้อมูลภายในองค์กร</label>
-              <textarea id="org-question" maxlength="2000" placeholder="เช่น ทีมใดทำงานด้าน support? ค้นชื่อทีมหรือบทบาทจากไฟล์ที่นำเข้า…" disabled></textarea>
-              <div class="question-composer-footer">
-                <span><span class="local-lock" aria-hidden="true">◈</span> คำตอบจะแสดงแหล่งอ้างอิง · ตรวจสอบสิทธิ์ข้อมูลก่อนนำเข้า</span>
-                <button id="ask-button" class="ask-button" type="button" disabled>ถาม AI ภายใน <span aria-hidden="true">→</span></button>
-              </div>
-            </div>
-            <article id="qa-answer" class="qa-answer" hidden aria-live="polite">
-              <div class="answer-heading"><span class="answer-avatar" aria-hidden="true">✳</span><div><strong>Forge · ตอบจากข้อมูลในเครื่อง</strong><small>คำตอบจากแถวที่ค้นพบเท่านั้น</small></div></div>
-              <p id="answer-text"></p>
-              <div id="answer-caveat" class="answer-caveat" hidden>ค้นเฉพาะบางแถวที่เกี่ยวข้อง คำตอบนี้อาจไม่ครอบคลุมทุกคนหรือทุกทีม</div>
-              <div id="answer-sources" class="answer-sources"></div>
-            </article>
-            <div class="org-chat-footnote"><span aria-hidden="true">ⓘ</span> สำหรับผู้ดูแลหนึ่งคน · ไม่ใช่ระบบบัญชีผู้ใช้หรือการควบคุมสิทธิ์ระดับองค์กร</div>
-          </section>
-
-          <section id="security" class="trust-panel">
-            <span class="trust-icon" aria-hidden="true">◈</span>
-            <div><strong>ปลอดภัยด้วยการออกแบบ ไม่ใช่คำโฆษณา</strong><p>ทำงานบนเครื่องคุณ · สแกน SAST และ secret ทุกการรัน · ทดสอบแยกใน sandbox · ตรวจ path ก่อนเขียนไฟล์ · manifest ลงลายเซ็นเพื่อตรวจย้อนกลับ · ต้องอนุมัติก่อนทุกครั้ง</p></div>
-            <span class="trust-tag">LOCAL FIRST</span>
-          </section>
-          <footer class="page-footer"><span>FORGE <b>·</b> AI CODING AGENT v2</span><span>ต้นแบบสำหรับทดลองใช้งาน · หลักฐานประกอบการควบคุม ไม่ใช่การรับรอง compliance</span></footer>
         </div>
-      </main>
+        <button id="org-data-btn" class="ghost-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          ถามข้อมูลองค์กร
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Chat Area -->
+    <main class="chat-main">
+      <div id="error-banner" class="error-banner" hidden></div>
+      
+      <div id="chat-messages" class="chat-messages">
+        <!-- Welcome Screen -->
+        <div id="welcome-screen" class="welcome-screen">
+          <div class="welcome-icon">✳</div>
+          <h1>AI Software Engineer</h1>
+          <p>สั่งงานให้ Forge เขียนโค้ด ออกแบบเว็บ หรือออกแบบระบบ<br>ด้วยกระบวนการ 7 ขั้นตอน (Plan → Code → Test → Security → Deploy)</p>
+          
+          <div class="suggestion-grid">
+            <button class="suggestion-card" data-prompt="ช่วยออกแบบและเขียนโค้ดหน้าเว็บ E-commerce พร้อมระบบตะกร้าสินค้า โดยใช้ HTML/CSS/JS พื้นฐาน">
+              <h3>🛒 สร้างหน้าเว็บ E-commerce</h3>
+              <p>หน้าเว็บพร้อมระบบตะกร้าสินค้า</p>
+            </button>
+            <button class="suggestion-card" data-prompt="ออกแบบโครงสร้างฐานข้อมูลสำหรับการทำระบบจองคิว (Queue System) และอธิบายโครงสร้างตาราง">
+              <h3>📊 ออกแบบฐานข้อมูล</h3>
+              <p>ระบบจองคิวออนไลน์</p>
+            </button>
+            <button class="suggestion-card" data-prompt="ช่วยตรวจหาช่องโหว่และ Refactor โค้ดในโปรเจกต์นี้ให้มีความปลอดภัยมากขึ้น">
+              <h3>🛡️ ตรวจสอบความปลอดภัย</h3>
+              <p>ค้นหาช่องโหว่และแก้โค้ด</p>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input Area -->
+      <div class="chat-input-container">
+        <div class="chat-input-wrapper">
+          <textarea id="task-input" rows="1" placeholder="บอกสิ่งที่ต้องการให้ AI ช่วยออกแบบ หรือเขียนโค้ด (กด Shift+Enter เพื่อขึ้นบรรทัดใหม่)..."></textarea>
+          <button id="run-button" class="send-btn" disabled>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+          </button>
+        </div>
+        <div class="input-footer">
+          <span>ปลอดภัย 100% ประมวลผลบนเครื่องของคุณ (Local AI)</span>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Org Data Modal -->
+  <dialog id="org-data-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>ข้อมูลองค์กร (Local Q&A)</h2>
+        <button id="close-modal" class="icon-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>นำเข้าไฟล์ CSV ภายในองค์กรเพื่อใช้เป็นฐานข้อมูลในการถาม-ตอบ โดยข้อมูลจะไม่ถูกส่งออกนอกเครื่อง</p>
+        
+        <div class="dataset-status-box">
+          <strong id="dataset-status">ยังไม่มีชุดข้อมูล</strong>
+          <small id="dataset-detail">กรุณานำเข้าไฟล์ CSV</small>
+        </div>
+
+        <div class="dataset-actions">
+          <input type="file" id="csv-input" accept=".csv" hidden>
+          <button id="import-btn" class="primary-btn">เลือกไฟล์ CSV</button>
+          <button id="clear-data-btn" class="danger-btn" hidden>ลบข้อมูล</button>
+        </div>
+
+        <div class="qa-section">
+          <textarea id="org-question" placeholder="ถามคำถามจากไฟล์ CSV..." disabled></textarea>
+          <button id="ask-btn" class="primary-btn" disabled>ถามข้อมูล</button>
+        </div>
+
+        <div id="qa-answer" class="qa-answer" hidden>
+          <strong>คำตอบ:</strong>
+          <p id="answer-text"></p>
+          <div id="answer-sources" class="answer-sources"></div>
+        </div>
+      </div>
     </div>
-  </body>
+  </dialog>
+</body>
 </html>
