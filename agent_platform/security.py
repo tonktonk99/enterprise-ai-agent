@@ -2,15 +2,44 @@ import re
 from pathlib import PurePosixPath
 
 
-SECRET_PATTERNS = (
-    re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
-    re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
-    re.compile(r"\bgh[pousr]_[A-Za-z0-9]{30,}\b"),
-    re.compile(r"\bsk-[A-Za-z0-9_-]{24,}\b"),
-    re.compile(
-        r"""(?i)\b(?:api[_-]?key|secret|password|token)\b\s*[:=]\s*["'][^"']{8,}["']"""
+SECRET_RULES: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("private_key", re.compile(r"-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY(?: BLOCK)?-----")),
+    ("aws_access_key", re.compile(r"\b(?:AKIA|ASIA|AGPA|AIDA|AROA|ANPA)[0-9A-Z]{16}\b")),
+    (
+        "aws_secret_key",
+        re.compile(
+            r"""(?i)aws_?secret_?access_?key\b["']?\s*[:=]\s*["']?[A-Za-z0-9/+=]{40}\b"""
+        ),
+    ),
+    ("github_token", re.compile(r"\b(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{60,})\b")),
+    ("gitlab_token", re.compile(r"\bglpat-[A-Za-z0-9_-]{20,}\b")),
+    ("api_token", re.compile(r"\bsk-[A-Za-z0-9_-]{24,}\b")),
+    ("stripe_key", re.compile(r"\b(?:sk|rk)_live_[A-Za-z0-9]{20,}\b")),
+    ("google_api_key", re.compile(r"\bAIza[0-9A-Za-z_-]{35}\b")),
+    ("slack_token", re.compile(r"\bxox[abposr]-[A-Za-z0-9-]{10,}\b")),
+    (
+        "slack_webhook",
+        re.compile(r"https://hooks\.slack\.com/services/T[A-Za-z0-9_]+/B[A-Za-z0-9_]+/[A-Za-z0-9_]+"),
+    ),
+    ("npm_token", re.compile(r"\bnpm_[A-Za-z0-9]{36}\b")),
+    (
+        "jwt",
+        re.compile(r"\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b"),
+    ),
+    ("azure_storage_key", re.compile(r"(?i)\bAccountKey=[A-Za-z0-9/+=]{40,}")),
+    (
+        "url_credential",
+        re.compile(r"\b[a-z][a-z0-9+.-]{1,20}://[^\s:/@\"']{1,64}:[^\s@/\"']{3,128}@[\w.-]+"),
+    ),
+    (
+        "credential",
+        re.compile(
+            r"""(?i)\b(?:api[_-]?key|secret|password|passwd|token|client[_-]?secret|access[_-]?key)\b["']?\s*[:=]\s*["'][^"']{8,}["']"""
+        ),
     ),
 )
+# Backwards-compatible view of the compiled patterns.
+SECRET_PATTERNS = tuple(pattern for _, pattern in SECRET_RULES)
 
 BLOCKED_PARTS = {
     ".git",
@@ -37,12 +66,7 @@ BLOCKED_NAMES = {
 
 def find_secrets(text: str) -> list[str]:
     """Return names of matched secret classes, never the matched values."""
-    labels = ("private_key", "aws_access_key", "github_token", "api_token", "credential")
-    return [
-        label
-        for label, pattern in zip(labels, SECRET_PATTERNS)
-        if pattern.search(text)
-    ]
+    return [label for label, pattern in SECRET_RULES if pattern.search(text)]
 
 
 def validate_relative_path(value: str) -> str:

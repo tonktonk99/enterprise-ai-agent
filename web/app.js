@@ -46,6 +46,9 @@ function displayError(message) {
     "Task must contain 1 to 3000 characters.": "พิมพ์รายละเอียดงานก่อนเริ่มได้เลย (ไม่เกิน 3,000 ตัวอักษร)",
     "Only localhost requests are allowed.": "อนุญาตเฉพาะการใช้งานจากเครื่องนี้เท่านั้น",
   };
+  if (message.startsWith("Session required.")) {
+    return "ยังไม่ได้เข้าสู่เซสชัน กรุณาเปิดลิงก์ Forge ที่มี ?token= จากหน้าต่าง Terminal ที่รันเซิร์ฟเวอร์";
+  }
   if (message.startsWith("Could not reach the local model.")) {
     return "เชื่อมต่อโมเดลในเครื่องไม่ได้ กรุณาเปิด Ollama และติดตั้งโมเดลที่ตั้งค่าไว้";
   }
@@ -307,7 +310,14 @@ applyButton.addEventListener("click", async () => {
 });
 
 fetch("/api/health")
-  .then((response) => response.json())
+  .then(async (response) => {
+    const health = await response.json();
+    if (response.status === 401) {
+      showError(health.error);
+      throw new Error(health.error);
+    }
+    return health;
+  })
   .then((health) => {
     document.querySelector("#workspace-name").textContent = health.workspace;
     const status = document.querySelector("#provider-status");

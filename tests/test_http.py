@@ -43,16 +43,73 @@ class AgentHttpTests(unittest.TestCase):
         cls.httpd.server_close()
         cls.thread.join(timeout=2)
 
-    def request(self, method, path, payload=None, headers=None):
+    def request(self, method, path, payload=None, headers=None, authenticated=True):
         connection = http.client.HTTPConnection("127.0.0.1", self.httpd.server_port)
         body = json.dumps(payload).encode("utf-8") if payload is not None else None
         request_headers = {"Content-Type": "application/json"}
+        if authenticated:
+            cookie_name = server_module.session_cookie_name(self.httpd.server_port)
+            request_headers["Cookie"] = f"{cookie_name}={server_module.SESSION_TOKEN}"
         request_headers.update(headers or {})
         connection.request(method, path, body=body, headers=request_headers)
         response = connection.getresponse()
         result = response.status, response.read()
+        self.last_headers = response.headers
         connection.close()
         return result
+
+    def test_api_requires_session_token(self):
+        for method, path, payload in (
+            ("GET", "/api/health", None),
+            ("GET", "/api/data/status", None),
+            ("POST", "/api/tasks", {"task": "x"}),
+            ("POST", "/api/data/clear", {"approved": True}),
+        ):
+            status, _ = self.request(method, path, payload, authenticated=False)
+            self.assertEqual(status, 401, path)
+            status, _ = self.request(
+                method,
+                path,
+                payload,
+                {"Cookie": f"forge_session_{self.httpd.server_port}=wrong"},
+                authenticated=False,
+            )
+            self.assertEqual(status, 401, path)
+        status, _ = self.request(
+            "GET",
+            "/api/health",
+            headers={server_module.SESSION_HEADER: server_module.SESSION_TOKEN},
+            authenticated=False,
+        )
+        self.assertEqual(status, 200)
+        # Static UI assets stay reachable so the page can explain how to log in.
+        status, _ = self.request("GET", "/", authenticated=False)
+        self.assertEqual(status, 200)
+
+    def test_startup_url_sets_strict_http_only_cookie(self):
+        status, _ = self.request("GET", "/?token=wrong", authenticated=False)
+        self.assertEqual(status, 401)
+        status, _ = self.request(
+            "GET", f"/?token={server_module.SESSION_TOKEN}", authenticated=False
+        )
+        self.assertEqual(status, 303)
+        self.assertEqual(self.last_headers["Location"], "/")
+        cookie = self.last_headers["Set-Cookie"]
+        self.assertIn(server_module.SESSION_TOKEN, cookie)
+        self.assertIn("HttpOnly", cookie)
+        self.assertIn("SameSite=Strict", cookie)
+
+    def test_storage_errors_do_not_leak_details(self):
+        with patch.object(
+            server_module.ORG_DATA,
+            "clear",
+            side_effect=OSError("/Users/secret/path/org-data.sqlite3 is locked"),
+        ):
+            status, body = self.request("POST", "/api/data/clear", {"approved": True})
+        self.assertEqual(status, 500)
+        self.assertNotIn(b"/Users/secret", body)
+        self.assertIn(b"Reference:", body)
+        self.assertNotIn("Python", self.last_headers.get("Server", ""))
 
     def test_writes_require_approval_and_reject_cross_origin_requests(self):
         server_module.TASKS.clear()

@@ -16,6 +16,34 @@ class SecurityTests(unittest.TestCase):
         value = "api_key = 'super-secret-value-123'"
         self.assertEqual(find_secrets(value), ["credential"])
 
+    def test_detects_common_credential_formats(self):
+        # Synthetic, non-functional values assembled at runtime.
+        samples = {
+            "private_key": "-----BEGIN " + "ENCRYPTED PRIVATE KEY-----",
+            "aws_access_key": "ASIA" + "A" * 16,
+            "aws_secret_key": "aws_secret_access_key = " + "a" * 40,
+            "github_token": "github_pat_" + "a" * 70,
+            "gitlab_token": "glpat-" + "a" * 20,
+            "stripe_key": "sk_" + "live_" + "a" * 24,
+            "google_api_key": "AIza" + "a" * 35,
+            "slack_token": "xoxb-" + "1" * 12,
+            "npm_token": "npm_" + "a" * 36,
+            "jwt": "eyJ" + "a" * 12 + ".eyJ" + "b" * 12 + "." + "c" * 12,
+            "azure_storage_key": "AccountKey=" + "a" * 44,
+            "url_credential": "postgres://admin:" + "hunter22" + "@db.internal",
+        }
+        for label, sample in samples.items():
+            with self.subTest(label=label):
+                self.assertIn(label, find_secrets(sample))
+
+    def test_ordinary_code_is_not_flagged(self):
+        code = (
+            "password = request.form['password']\n"
+            "url = 'https://example.com/path'\n"
+            "token_count = len(tokens)\n"
+        )
+        self.assertEqual(find_secrets(code), [])
+
     def test_rejects_traversal_and_credentials_files(self):
         for path in ("../outside.py", "/tmp/outside.py", ".env", "nested/.env.local"):
             with self.subTest(path=path), self.assertRaises(ValueError):

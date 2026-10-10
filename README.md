@@ -7,7 +7,7 @@ This is a single-user local prototype, **not** a production enterprise platform.
 ## Private organization Q&A
 
 1. Start the local Ollama model described below.
-2. Open Forge at <http://127.0.0.1:8000> and choose a UTF-8 `.csv` file containing data you are authorized to process.
+2. Open the private `http://127.0.0.1:8000/?token=…` URL that Forge prints at start-up and choose a UTF-8 `.csv` file containing data you are authorized to process.
 3. Ask a focused question. Forge retrieves a bounded set of matching rows and sends that context only to Ollama on `127.0.0.1`.
 4. Review citations to the original CSV row numbers. Remove the local dataset when you no longer need it.
 
@@ -56,7 +56,7 @@ AGENT_PORT=8000 \
 python3 run.py
 ```
 
-Open <http://127.0.0.1:8000>. No cloud API key is needed. If port 8000 is busy, use `AGENT_PORT=8001` and open <http://127.0.0.1:8001>. The server only binds loopback.
+Forge prints a private start-up URL such as `http://127.0.0.1:8000/?token=…`. Open **that exact URL**; it exchanges the per-run random token for an `HttpOnly`, `SameSite=Strict` cookie and redirects to the UI. Every `/api/*` request requires this session, so other programs or browser tabs on the computer cannot drive the agent without the token. The token changes on every restart—do not share or paste it elsewhere. No cloud API key is needed. If port 8000 is busy, use `AGENT_PORT=8001`. The server only binds loopback.
 
 ## Local configuration
 
@@ -80,9 +80,9 @@ Do not set `AI_BASE_URL` to a cloud provider. Forge refuses non-local model endp
 - **Bounded context:** at most five relevant text files/12,000 characters; common generated directories and files that trigger secret patterns are skipped.
 - **Review before write:** inspect a proposal before explicitly approving it. Unsafe paths, symlinks, stale files, and likely credentials are rejected.
 - **No hidden execution:** generated code and suggested tests are not executed; deployment is never automated.
-- **Local protections:** loopback-only HTTP service, cross-origin checks, request/file-size bounds, browser security headers, owner-only local SQLite files, and audit-chain verification at `GET /api/audit/verify`.
+- **Local protections:** per-run session token (constant-time check, `HttpOnly`/`SameSite=Strict` cookie, redacted from request logs), loopback-only HTTP service, cross-origin checks, request/file-size bounds, browser security headers, generic error responses with a local reference ID instead of internal paths, owner-only local SQLite files, and audit-chain verification at `GET /api/audit/verify`.
 
-Secret detection is pattern-based and cannot guarantee that every sensitive value is caught. File replacements are atomic individually, not as one multi-file transaction. Keep backups and version control enabled.
+Secret detection is pattern-based (private keys, AWS, GitHub, GitLab, Stripe, Google, Slack, npm, JWT, Azure storage keys, credentials in URLs, and assigned password/token literals) and cannot guarantee that every sensitive value is caught. The session token protects against other local programs and browser tabs, not against malware running as your user that can read your terminal or browser profile. File replacements are atomic individually, not as one multi-file transaction. Keep backups and version control enabled.
 
 ## Workflow and safeguards
 

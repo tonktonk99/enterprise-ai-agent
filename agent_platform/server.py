@@ -1,12 +1,15 @@
+import hmac
 import json
 import os
+import secrets
 import sqlite3
 import threading
 import uuid
+from http.cookies import CookieError, SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 from .agent import create_proposal
 from .audit import AuditLog
@@ -21,21 +24,35 @@ TASKS: dict[str, dict[str, Any]] = {}
 TASKS_LOCK = threading.RLock()
 MAX_BODY_BYTES = 32 * 1024
 MAX_IMPORT_BODY_BYTES = 2_000_000
+# A fresh 256-bit secret per server run. Only someone who sees the start-up
+# URL (printed to the launching terminal) can call the API.
+SESSION_TOKEN = secrets.token_urlsafe(32)
+SESSION_HEADER = "X-Forge-Session"
 
 
 AUDIT = AuditLog()
 ORG_DATA = OrganizationDataStore()
 
 
+def session_cookie_name(port: int) -> str:
+    # Cookies are not isolated by port, so scope the name to this server.
+    return f"forge_session_{port}"
+
+
 class Handler(BaseHTTPRequestHandler):
-    server_version = "EnterpriseAgent/0.1"
+    server_version = "Forge"
+    sys_version = ""
 
     def _headers(self, content_type: str) -> None:
         self.send_header("Content-Type", content_type)
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "no-referrer")
-        self.send_header("Content-Security-Policy", "default-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'")
+        self.send_header("Content-Security-Policy", "default-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
         self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("Cross-Origin-Opener-Policy", "same-origin")
+        self.send_header("Cross-Origin-Resource-Policy", "same-origin")
+        self.send_header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
 
     def _json(self, status: int, payload: dict[str, Any]) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
@@ -46,7 +63,10 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _body(self, max_bytes: int = MAX_BODY_BYTES) -> dict[str, Any]:
-        length = int(self.headers.get("Content-Length", "0"))
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            length = 0
         if length <= 0 or length > max_bytes:
             raise ValueError(f"Request body must be between 1 byte and {max_bytes} bytes.")
         try:
@@ -56,6 +76,48 @@ class Handler(BaseHTTPRequestHandler):
         if not isinstance(content, dict):
             raise ValueError("Request body must be a JSON object.")
         return content
+
+    @staticmethod
+    def _token_matches(candidate: str | None) -> bool:
+        if not candidate:
+            return False
+        return hmac.compare_digest(candidate.encode("utf-8"), SESSION_TOKEN.encode("utf-8"))
+
+    def _authorized(self) -> bool:
+        if self._token_matches(self.headers.get(SESSION_HEADER)):
+            return True
+        raw_cookie = self.headers.get("Cookie")
+        if not raw_cookie:
+            return False
+        try:
+            cookie = SimpleCookie(raw_cookie)
+        except CookieError:
+            return False
+        morsel = cookie.get(session_cookie_name(self.server.server_port))
+        return morsel is not None and self._token_matches(morsel.value)
+
+    def _unauthorized(self) -> None:
+        self._json(
+            401,
+            {"error": "Session required. Open the Forge URL printed in the terminal."},
+        )
+
+    def _start_session(self, query: str) -> bool:
+        """Exchange the start-up URL token for an HttpOnly, SameSite=Strict cookie."""
+        values = parse_qs(query).get("token", [])
+        if len(values) != 1 or not self._token_matches(values[0]):
+            return False
+        self.send_response(303)
+        self._headers("text/plain; charset=utf-8")
+        self.send_header(
+            "Set-Cookie",
+            f"{session_cookie_name(self.server.server_port)}={SESSION_TOKEN}; "
+            "Path=/; HttpOnly; SameSite=Strict",
+        )
+        self.send_header("Location", "/")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+        return True
 
     def _host_is_local(self) -> bool:
         host = self.headers.get("Host", "")
@@ -92,7 +154,15 @@ class Handler(BaseHTTPRequestHandler):
         if not self._host_is_local():
             self._json(403, {"error": "Only localhost requests are allowed."})
             return
-        path = urlparse(self.path).path
+        parsed_url = urlparse(self.path)
+        path = parsed_url.path
+        if path == "/" and parsed_url.query:
+            if not self._start_session(parsed_url.query):
+                self._unauthorized()
+            return
+        if path.startswith("/api/") and not self._authorized():
+            self._unauthorized()
+            return
         if path == "/api/health":
             try:
                 configured_model = model_name()
@@ -142,6 +212,9 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         if not self._host_is_local():
             self._json(403, {"error": "Only localhost requests are allowed."})
+            return
+        if not self._authorized():
+            self._unauthorized()
             return
         path = urlparse(self.path).path
         try:
@@ -243,10 +316,21 @@ class Handler(BaseHTTPRequestHandler):
         except (ValueError, RuntimeError) as error:
             self._json(422, {"error": str(error)})
         except (sqlite3.Error, OSError) as error:
-            self._json(500, {"error": f"Local storage operation failed: {error}"})
+            self._internal_error("Local storage operation failed.", error)
+        except Exception as error:  # noqa: BLE001 - never leak tracebacks to clients
+            self._internal_error("Unexpected server error.", error)
+
+    def _internal_error(self, public_message: str, error: BaseException) -> None:
+        reference = uuid.uuid4().hex[:8]
+        self.log_error("[%s] %s: %r", reference, type(error).__name__, error)
+        self._json(500, {"error": f"{public_message} Reference: {reference}"})
 
     def log_message(self, format: str, *args: object) -> None:
-        super().log_message(format, *args)
+        redacted = tuple(
+            arg.replace(SESSION_TOKEN, "[redacted]") if isinstance(arg, str) else arg
+            for arg in args
+        )
+        super().log_message(format, *redacted)
 
 
 def main() -> None:
@@ -255,7 +339,9 @@ def main() -> None:
         raise RuntimeError("The development server only supports loopback binding.")
     port = int(os.environ.get("AGENT_PORT", "8000"))
     server = ThreadingHTTPServer((host, port), Handler)
-    print(f"Enterprise AI Agent UI: http://127.0.0.1:{port}")
+    url_host = "[::1]" if host == "::1" else host
+    print(f"Forge UI (keep this URL private): http://{url_host}:{port}/?token={SESSION_TOKEN}")
+    print("The token changes every time Forge restarts.")
     print(f"Workspace: {ROOT}")
     server.serve_forever()
 
