@@ -36,6 +36,17 @@ def completion(
     max_tokens: int,
     json_mode: bool = False,
 ) -> str:
+    content, _ = completion_with_usage(messages, max_tokens=max_tokens, json_mode=json_mode)
+    return content
+
+
+def completion_with_usage(
+    messages: list[dict[str, str]],
+    *,
+    max_tokens: int,
+    json_mode: bool = False,
+) -> tuple[str, dict[str, int]]:
+    """Call the local model and return (content, {"prompt": n, "completion": n})."""
     base_url = os.environ.get("AI_BASE_URL", DEFAULT_BASE_URL).rstrip("/")
     parsed = urllib.parse.urlparse(base_url)
     if (
@@ -73,7 +84,7 @@ def completion(
     )
     opener = urllib.request.build_opener(_NoRedirect())
     try:
-        with opener.open(request, timeout=120) as response:
+        with opener.open(request, timeout=180) as response:
             raw = response.read(MAX_RESPONSE_BYTES + 1)
     except urllib.error.HTTPError as error:
         detail = error.read(2_000).decode("utf-8", errors="replace")
@@ -91,11 +102,28 @@ def completion(
         payload = json.loads(raw.decode("utf-8"))
         choices = payload.get("choices")
         content = choices[0].get("message", {}).get("content") if choices else None
+        usage = payload.get("usage") or {}
     except (UnicodeDecodeError, json.JSONDecodeError, AttributeError, IndexError) as error:
         raise ValueError("The local model returned an invalid chat-completions response.") from error
     if not isinstance(content, str) or not content.strip():
         raise ValueError("The local model returned no answer.")
-    return content.strip()
+
+    def _count(key: str, fallback_text: str) -> int:
+        value = usage.get(key) if isinstance(usage, dict) else None
+        if isinstance(value, int) and value >= 0:
+            return value
+        return estimate_tokens(fallback_text)
+
+    prompt_text = "".join(str(message.get("content", "")) for message in messages)
+    return content.strip(), {
+        "prompt": _count("prompt_tokens", prompt_text),
+        "completion": _count("completion_tokens", content),
+    }
+
+
+def estimate_tokens(text: str) -> int:
+    """Cheap, model-agnostic token estimate (~4 characters per token)."""
+    return max(1, (len(text) + 3) // 4) if text else 0
 
 
 def model_ready() -> bool:

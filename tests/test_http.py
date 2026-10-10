@@ -62,7 +62,7 @@ class AgentHttpTests(unittest.TestCase):
         for method, path, payload in (
             ("GET", "/api/health", None),
             ("GET", "/api/data/status", None),
-            ("POST", "/api/tasks", {"task": "x"}),
+            ("POST", "/api/runs", {"task": "x"}),
             ("POST", "/api/data/clear", {"approved": True}),
         ):
             status, _ = self.request(method, path, payload, authenticated=False)
@@ -112,52 +112,49 @@ class AgentHttpTests(unittest.TestCase):
         self.assertNotIn("Python", self.last_headers.get("Server", ""))
 
     def test_writes_require_approval_and_reject_cross_origin_requests(self):
-        server_module.TASKS.clear()
+        server_module.RUNS.clear()
         before_hash = hashlib.sha256(b"before\n").hexdigest()
-        proposal = {
-            "summary": "Update target.",
-            "plan": ["Update one file."],
-            "files": [
-                {
-                    "path": "target.py",
-                    "content": "after\n",
-                    "before_hash": before_hash,
-                    "reason": "Test proposal",
-                }
-            ],
-            "tests": [],
-            "review": {"status": "pass", "notes": []},
-            "security_findings": [],
-            "deployment_notes": [],
-            "context": {
-                "files_scanned": 1,
-                "files_included": 1,
-                "files_skipped_for_secrets": 0,
-                "context_chars": 7,
-            },
-            "status": "ready",
-        }
-        with patch.object(server_module, "create_proposal", return_value=proposal):
-            status, body = self.request("POST", "/api/tasks", {"task": "change target"})
-        self.assertEqual(status, 201)
+        from agent_platform.agent import Run
+        run_obj = Run(_root, "change target")
+        run_obj.id = "run-123"
+        run_obj.status = "awaiting_approval"
+        run_obj.files = [
+            {
+                "path": "target.py",
+                "change": "modify",
+                "content": "after\n",
+                "before_hash": before_hash,
+                "additions": 1,
+                "deletions": 1,
+                "reason": "Test proposal",
+            }
+        ]
+        run_obj.proposed_files = run_obj.files
+        server_module.RUNS["run-123"] = run_obj
+        with patch("agent_platform.agent.Run.execute") as mock_pipeline:
+            status, body = self.request("POST", "/api/runs", {"task": "change target"})
+        self.assertEqual(status, 202)
         task_id = json.loads(body)["id"]
+        # The API created a new run, let's swap it with our mocked one for the apply step
+        server_module.RUNS[task_id] = run_obj
+
 
         status, _ = self.request(
-            "POST", f"/api/tasks/{task_id}/apply", {"approved": False}
+            "POST", f"/api/runs/{task_id}/apply", {"approved": False}
         )
         self.assertEqual(status, 400)
         self.assertEqual(_target.read_text(encoding="utf-8"), "before\n")
 
         status, _ = self.request(
             "POST",
-            "/api/tasks",
+            "/api/runs",
             {"task": "attack"},
             {"Origin": "https://attacker.example"},
         )
         self.assertEqual(status, 403)
 
         status, body = self.request(
-            "POST", f"/api/tasks/{task_id}/apply", {"approved": True}
+            "POST", f"/api/runs/{task_id}/apply", {"approved": True}
         )
         self.assertEqual(status, 200, body.decode("utf-8"))
         self.assertEqual(_target.read_text(encoding="utf-8"), "after\n")

@@ -6,7 +6,7 @@ from unittest.mock import patch
 import json
 import os
 
-from agent_platform.agent import create_proposal
+from agent_platform.agent import Run
 from agent_platform.security import find_secrets, validate_relative_path
 from agent_platform.workspace import apply_proposal, gather_context, validate_proposal
 
@@ -98,29 +98,27 @@ class SecurityTests(unittest.TestCase):
             root = Path(temp)
             target = root / "app.py"
             target.write_text("old\n", encoding="utf-8")
-            model_content = {
-                "summary": "Update application output.",
-                "plan": ["Update the app."],
-                "files": [{"path": "app.py", "content": "new\n", "reason": "Fix"}],
-                "tests": ["Run the unit tests."],
-                "review": {"status": "pass", "notes": []},
-                "security_findings": [],
-                "deployment_notes": ["Deploy manually after review."],
-            }
-            with patch.dict(
-                os.environ,
-                {"AI_API_KEY": "test-key", "AI_BASE_URL": "http://localhost:8001/v1"},
-            ), patch(
-                "agent_platform.agent.completion",
-                return_value=json.dumps(model_content),
-            ):
-                proposal = create_proposal(root, "Update app.py output")
+            
+            def mock_completion(*args, **kwargs):
+                prompt = kwargs.get("prompt", args[0] if args else "")
+                usage = {"prompt": 10, "completion": 10}
+                if "Planner" in str(prompt):
+                    return json.dumps({"goal": "g", "steps": ["s"], "files_to_read": ["app.py"], "files_to_create": [], "risk": "low", "acceptance": []}), usage
+                elif "Coder" in str(prompt):
+                    return json.dumps({"files": [{"path": "app.py", "content": "new\n", "reason": "Fix"}]}), usage
+                elif "Reviewer" in str(prompt):
+                    return json.dumps({"status": "pass", "notes": []}), usage
+                return "{}", {"prompt": 0, "completion": 0}
 
-            self.assertEqual(proposal["status"], "ready")
+            run = Run(root, "Update app.py output")
+            with patch.dict(os.environ, {"AI_API_KEY": "test-key"}), \
+                 patch("agent_platform.agent.completion_with_usage", side_effect=mock_completion):
+                run.execute()
+
+            self.assertEqual(run.status, "awaiting_approval", run.error)
             self.assertEqual(
-                proposal["files"][0]["before_hash"], hashlib.sha256(b"old\n").hexdigest()
+                run.proposed_files[0]["before_hash"], hashlib.sha256(b"old\n").hexdigest()
             )
-
 
 if __name__ == "__main__":
     unittest.main()

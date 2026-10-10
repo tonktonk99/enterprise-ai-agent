@@ -1,17 +1,32 @@
 const taskInput = document.querySelector("#task-input");
 const runButton = document.querySelector("#run-button");
-const applyButton = document.querySelector("#apply-button");
-const errorBanner = document.querySelector("#error-banner");
-const resultSection = document.querySelector("#result-section");
 const characterCount = document.querySelector("#character-count");
+const errorBanner = document.querySelector("#error-banner");
 const appShell = document.querySelector(".app-shell");
+
 const csvInput = document.querySelector("#csv-input");
 const importButton = document.querySelector("#import-button");
 const clearDataButton = document.querySelector("#clear-data-button");
 const orgQuestion = document.querySelector("#org-question");
 const askButton = document.querySelector("#ask-button");
 const qaAnswer = document.querySelector("#qa-answer");
-let activeProposal = null;
+
+const runSection = document.querySelector("#run-section");
+const runIdEl = document.querySelector("#run-id");
+const runTaskEl = document.querySelector("#run-task");
+const runMetaEl = document.querySelector("#run-meta");
+const runStatusEl = document.querySelector("#run-status");
+const patchLink = document.querySelector("#patch-link");
+const pipelineTracker = document.querySelector("#pipeline-tracker");
+const runErrorEl = document.querySelector("#run-error");
+
+const confirmDiff = document.querySelector("#confirm-diff");
+const rejectBtn = document.querySelector("#reject-button");
+const approveBtn = document.querySelector("#approve-button");
+const approveStatus = document.querySelector("#approve-status");
+
+let activeRunId = null;
+let pollTimer = null;
 
 function addText(parent, tag, text, className) {
   const element = document.createElement(tag);
@@ -21,41 +36,23 @@ function addText(parent, tag, text, className) {
   return element;
 }
 
-function setBusy(isBusy) {
-  appShell.classList.toggle("is-thinking", isBusy);
-  runButton.disabled = isBusy;
-  runButton.setAttribute("aria-busy", String(isBusy));
-  runButton.innerHTML = isBusy
-    ? '<span class="button-spark">✳</span><span>Forge กำลังวางแผนและตรวจโค้ด…</span>'
-    : '<span class="button-spark">✳</span><span>ให้ Forge เริ่มทำงาน</span><span class="button-arrow">→</span>';
-}
-
-async function api(path, payload) {
-  const response = await fetch(path, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+async function api(path, payload = undefined, method = undefined) {
+  const options = {
+    method: method || (payload ? "POST" : "GET"),
+    headers: { "Content-Type": "application/json" }
+  };
+  if (payload) options.body = JSON.stringify(payload);
+  const response = await fetch(path, options);
   const result = await response.json();
   if (!response.ok) throw new Error(result.error || `Request failed (${response.status})`);
   return result;
 }
 
 function displayError(message) {
-  const messages = {
-    "Task must contain 1 to 3000 characters.": "พิมพ์รายละเอียดงานก่อนเริ่มได้เลย (ไม่เกิน 3,000 ตัวอักษร)",
-    "Only localhost requests are allowed.": "อนุญาตเฉพาะการใช้งานจากเครื่องนี้เท่านั้น",
-  };
-  if (message.startsWith("Session required.")) {
-    return "ยังไม่ได้เข้าสู่เซสชัน กรุณาเปิดลิงก์ Forge ที่มี ?token= จากหน้าต่าง Terminal ที่รันเซิร์ฟเวอร์";
-  }
-  if (message.startsWith("Could not reach the local model.")) {
-    return "เชื่อมต่อโมเดลในเครื่องไม่ได้ กรุณาเปิด Ollama และติดตั้งโมเดลที่ตั้งค่าไว้";
-  }
-  if (message.startsWith("Import an approved CSV dataset")) {
-    return "กรุณานำเข้าไฟล์ CSV ที่ได้รับอนุญาตก่อนถาม";
-  }
-  return messages[message] || message;
+  if (message.startsWith("Session required.")) return "ยังไม่ได้เข้าสู่เซสชัน กรุณาเปิดลิงก์ Forge ที่มี ?token= จากหน้าต่าง Terminal ที่รันเซิร์ฟเวอร์";
+  if (message.startsWith("Could not reach the local model.")) return "เชื่อมต่อโมเดลในเครื่องไม่ได้ กรุณาเปิด Ollama และติดตั้งโมเดลที่ตั้งค่าไว้";
+  if (message.startsWith("Import an approved CSV dataset")) return "กรุณานำเข้าไฟล์ CSV ที่ได้รับอนุญาตก่อนถาม";
+  return message;
 }
 
 function showError(message) {
@@ -71,9 +68,7 @@ function clearAnswer() {
 
 async function refreshDataset() {
   try {
-    const response = await fetch("/api/data/status");
-    const status = await response.json();
-    if (!response.ok) throw new Error(status.error || "อ่านสถานะข้อมูลไม่ได้");
+    const status = await api("/api/data/status");
     const datasetStatus = document.querySelector("#dataset-status");
     const datasetDetail = document.querySelector("#dataset-detail");
     const allowedFields = document.querySelector("#allowed-fields");
@@ -84,6 +79,7 @@ async function refreshDataset() {
       clearDataButton.hidden = true;
       orgQuestion.disabled = true;
       askButton.disabled = true;
+      document.querySelector("#profile-panel").hidden = true;
       return;
     }
     datasetStatus.textContent = `พร้อมค้นหา · ${status.record_count.toLocaleString()} รายการ`;
@@ -93,81 +89,34 @@ async function refreshDataset() {
     clearDataButton.hidden = false;
     orgQuestion.disabled = false;
     askButton.disabled = false;
+    
+    // Load profile
+    loadProfile();
   } catch (error) {
     showError(error.message);
   }
 }
 
-function renderList(id, values, emptyText) {
-  const list = document.querySelector(id);
-  list.replaceChildren();
-  if (!values.length) {
-    addText(list, "li", emptyText, "empty-message");
-    return;
-  }
-  values.forEach((value) => addText(list, "li", value));
-}
-
-function renderProposal(proposal) {
-  activeProposal = proposal;
-  resultSection.hidden = false;
-  document.querySelector("#result-summary").textContent = proposal.summary;
-  document.querySelector("#proposal-status").textContent =
-    proposal.status === "ready" ? "รอตรวจสอบ" : "ถูกระงับ · มีประเด็นให้ตรวจ";
-  document.querySelector("#proposal-status").className =
-    `proposal-status${proposal.status === "ready" ? "" : " blocked"}`;
-  renderList("#plan-list", proposal.plan, "ยังไม่มีรายละเอียดแผน");
-
-  const securityList = document.querySelector("#security-list");
-  securityList.replaceChildren();
-  if (!proposal.security_findings.length) {
-    addText(securityList, "div", "ไม่พบประเด็นจากการตรวจเบื้องต้น", "security-item low");
-  } else {
-    proposal.security_findings.forEach((finding) => {
-      addText(securityList, "div", `${finding.severity.toUpperCase()} · ${finding.path || "review"} — ${finding.message}`, `security-item ${finding.severity}`);
-    });
-  }
-  const context = proposal.context;
-  document.querySelector("#context-stats").textContent =
-    `Context: ${context.files_included}/${context.files_scanned} files · ${context.context_chars.toLocaleString()} characters · ${context.files_skipped_for_secrets} secret-screened`;
-
-  const fileList = document.querySelector("#file-list");
-  fileList.replaceChildren();
-  document.querySelector("#file-count").textContent =
-    `เสนอ ${proposal.files.length} ไฟล์ · ตรวจเนื้อหาได้ก่อนอนุมัติ`;
-  proposal.files.forEach((file) => {
-    const card = document.createElement("div");
-    card.className = "file-card";
-    const head = document.createElement("div");
-    head.className = "file-head";
-    addText(head, "span", "▤");
-    addText(head, "strong", file.path);
-    addText(head, "span", file.reason || "เสนอการเปลี่ยนแปลง", "file-reason");
-    const copyButton = addText(head, "button", "คัดลอก", "copy-button");
-    copyButton.type = "button";
-    copyButton.addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText(file.content);
-        copyButton.textContent = "คัดลอกแล้ว";
-        window.setTimeout(() => { copyButton.textContent = "คัดลอก"; }, 1500);
-      } catch {
-        showError("คัดลอกไม่ได้ กรุณาเลือกและคัดลอกจากกล่องโค้ดแทน");
-      }
-    });
-    const editor = document.createElement("textarea");
-    editor.className = "file-content";
-    editor.setAttribute("aria-label", `Review proposed contents for ${file.path}`);
-    editor.spellcheck = false;
-    editor.value = file.content;
-    editor.readOnly = true;
-    card.append(head, editor);
-    fileList.append(card);
-  });
-  renderList("#tests-list", proposal.tests, "ยังไม่มีข้อเสนอการทดสอบ");
-  renderList("#deploy-list", proposal.deployment_notes, "ไม่มีการ deploy อัตโนมัติ");
-  applyButton.disabled = proposal.status !== "ready" || !proposal.files.length;
-  applyButton.innerHTML = 'อนุมัติและนำไปใช้ <span>→</span>';
-  resultSection.scrollIntoView({ behavior: "smooth", block: "start" });
+async function loadProfile() {
+  try {
+    const profile = await api("/api/data/profile");
+    if (profile.loaded) {
+      document.querySelector("#profile-panel").hidden = false;
+      const tbody = document.querySelector("#profile-body");
+      tbody.replaceChildren();
+      profile.columns.forEach(col => {
+        const tr = document.createElement("tr");
+        addText(tr, "td", col.name, "col-name");
+        addText(tr, "td", col.non_empty.toLocaleString());
+        addText(tr, "td", col.distinct.toLocaleString());
+        const topStr = col.top.map(t => `${t.value} (${t.count})`).join(", ");
+        addText(tr, "td", topStr);
+        const numStr = col.numeric ? `${col.numeric.min} · ${col.numeric.max} · ${col.numeric.mean.toFixed(2)}` : "-";
+        addText(tr, "td", numStr);
+        tbody.append(tr);
+      });
+    }
+  } catch(e) {}
 }
 
 taskInput.addEventListener("input", () => {
@@ -202,14 +151,9 @@ csvInput.addEventListener("change", async () => {
   importButton.disabled = true;
   importButton.textContent = "กำลังนำเข้าข้อมูล…";
   try {
-    const result = await api("/api/data/import", {
-      filename: file.name,
-      content: await file.text(),
-    });
+    const result = await api("/api/data/import", { filename: file.name, content: await file.text() });
     clearAnswer();
     orgQuestion.value = "";
-    document.querySelector("#dataset-status").textContent =
-      `พร้อมค้นหา · ${result.record_count.toLocaleString()} รายการ`;
     await refreshDataset();
   } catch (error) {
     showError(error.message);
@@ -236,11 +180,7 @@ clearDataButton.addEventListener("click", async () => {
 });
 
 askButton.addEventListener("click", async () => {
-  if (!orgQuestion.value.trim()) {
-    showError("พิมพ์คำถามเกี่ยวกับข้อมูลที่นำเข้าก่อนครับ");
-    orgQuestion.focus();
-    return;
-  }
+  if (!orgQuestion.value.trim()) return;
   errorBanner.hidden = true;
   askButton.disabled = true;
   appShell.classList.add("is-thinking");
@@ -270,44 +210,430 @@ orgQuestion.addEventListener("keydown", (event) => {
   }
 });
 
+function setBusy(isBusy) {
+  appShell.classList.toggle("is-thinking", isBusy);
+  runButton.disabled = isBusy;
+  taskInput.disabled = isBusy;
+  runButton.innerHTML = isBusy
+    ? '<span class="button-spark">✳</span><span>Forge กำลังทำงาน…</span>'
+    : '<span class="button-spark">✳</span><span>เริ่ม Pipeline</span><span class="button-arrow">→</span>';
+}
+
 runButton.addEventListener("click", async () => {
-  if (!taskInput.value.trim()) {
-    showError("พิมพ์รายละเอียดงานก่อนเริ่มได้เลย (ไม่เกิน 3,000 ตัวอักษร)");
-    taskInput.focus();
-    return;
-  }
+  if (!taskInput.value.trim()) return;
   errorBanner.hidden = true;
-  resultSection.hidden = true;
   setBusy(true);
   try {
-    renderProposal(await api("/api/tasks", { task: taskInput.value }));
+    const result = await api("/api/runs", { task: taskInput.value });
+    activeRunId = result.id;
+    startPolling();
   } catch (error) {
     showError(error.message);
-  } finally {
     setBusy(false);
   }
 });
 
-applyButton.addEventListener("click", async () => {
-  if (!activeProposal || applyButton.disabled) return;
-  if (!window.confirm("ยืนยันนำไฟล์ที่ตรวจแล้วไปเขียนใน workspace นี้หรือไม่?")) return;
-  errorBanner.hidden = true;
-  applyButton.disabled = true;
-  applyButton.textContent = "Applying…";
+function startPolling() {
+  if (pollTimer) clearTimeout(pollTimer);
+  runSection.hidden = false;
+  runSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  pollRun();
+}
+
+async function pollRun() {
   try {
-    await api(`/api/tasks/${encodeURIComponent(activeProposal.id)}/apply`, {
-      approved: true,
-    });
-    activeProposal.status = "applied";
-    document.querySelector("#proposal-status").textContent = "นำไปใช้แล้ว";
-    applyButton.textContent = "นำการเปลี่ยนแปลงไปใช้แล้ว";
-    applyButton.disabled = true;
+    const run = await api(`/api/runs/${activeRunId}`);
+    renderRun(run);
+    if (run.status === "queued" || run.status === "running") {
+      pollTimer = setTimeout(pollRun, 1000);
+    } else {
+      setBusy(false);
+      refreshMetrics();
+      refreshHistory();
+    }
   } catch (error) {
-    showError(error.message);
-    applyButton.disabled = false;
-    applyButton.innerHTML = 'อนุมัติและนำไปใช้ <span>→</span>';
+    runErrorEl.textContent = displayError(error.message);
+    runErrorEl.hidden = false;
+    setBusy(false);
+  }
+}
+
+function renderRun(run) {
+  runIdEl.textContent = run.id;
+  runTaskEl.textContent = run.task;
+  runStatusEl.textContent = run.status.toUpperCase();
+  runStatusEl.className = `status-badge ${run.status}`;
+  
+  if (run.error) {
+    runErrorEl.textContent = run.error;
+    runErrorEl.hidden = false;
+  } else {
+    runErrorEl.hidden = true;
+  }
+
+  patchLink.hidden = (run.status !== "awaiting_approval" && run.status !== "applied");
+  if (!patchLink.hidden) {
+    patchLink.href = `/api/runs/${run.id}/patch`;
+  }
+
+  // Render tracker
+  pipelineTracker.replaceChildren();
+  run.stages.forEach((stage, idx) => {
+    const li = document.createElement("li");
+    li.className = `tracker-stage ${stage.status}`;
+    const circle = addText(li, "span", (idx + 1).toString(), "stage-circle");
+    const name = addText(li, "span", stage.name, "stage-name");
+    const meta = document.createElement("div");
+    meta.className = "stage-meta";
+    if (stage.duration_ms) {
+      addText(meta, "span", `${(stage.duration_ms / 1000).toFixed(1)}s`);
+    }
+    if (stage.tokens?.total) {
+      addText(meta, "span", `${stage.tokens.total.toLocaleString()} t`);
+    }
+    li.append(meta);
+    if (stage.summary) {
+      const tooltip = addText(li, "div", stage.summary, "stage-tooltip");
+    }
+    pipelineTracker.append(li);
+  });
+
+  // Render tabs
+  renderPlanTab(run);
+  renderDiffTab(run);
+  renderTestsTab(run);
+  renderSecurityTab(run);
+  renderComplianceTab(run);
+  renderProvenanceTab(run);
+  renderTokensTab(run);
+
+  // Approve bar
+  confirmDiff.disabled = (run.status !== "awaiting_approval");
+  rejectBtn.disabled = (run.status !== "awaiting_approval");
+  approveBtn.disabled = (run.status !== "awaiting_approval") || !confirmDiff.checked;
+  
+  if (run.status === "awaiting_approval") {
+    approveStatus.textContent = "รอการอนุมัติ…";
+  } else if (run.status === "applied") {
+    approveStatus.textContent = "นำไปใช้แล้ว";
+    confirmDiff.checked = false;
+  } else if (run.status === "rejected") {
+    approveStatus.textContent = "ปฏิเสธแล้ว";
+  } else {
+    approveStatus.textContent = `สถานะ: ${run.status}`;
+  }
+}
+
+confirmDiff.addEventListener("change", () => {
+  if (activeRunId) {
+    approveBtn.disabled = !confirmDiff.checked;
   }
 });
+
+rejectBtn.addEventListener("click", async () => {
+  if (!activeRunId) return;
+  rejectBtn.disabled = true;
+  try {
+    const res = await api(`/api/runs/${activeRunId}/reject`, {});
+    runStatusEl.textContent = "REJECTED";
+    approveStatus.textContent = "ปฏิเสธแล้ว";
+    rejectBtn.disabled = true;
+    approveBtn.disabled = true;
+    confirmDiff.disabled = true;
+  } catch (err) {
+    showError(err.message);
+    rejectBtn.disabled = false;
+  }
+});
+
+approveBtn.addEventListener("click", async () => {
+  if (!activeRunId || !confirmDiff.checked) return;
+  approveBtn.disabled = true;
+  approveBtn.textContent = "Applying...";
+  try {
+    const res = await api(`/api/runs/${activeRunId}/apply`, { approved: true });
+    runStatusEl.textContent = "APPLIED";
+    approveStatus.textContent = "นำไปใช้แล้ว";
+    approveBtn.textContent = "อนุมัติและนำไปใช้ →";
+    rejectBtn.disabled = true;
+    approveBtn.disabled = true;
+    confirmDiff.disabled = true;
+  } catch (err) {
+    showError(err.message);
+    approveBtn.textContent = "อนุมัติและนำไปใช้ →";
+    approveBtn.disabled = false;
+  }
+});
+
+function renderPlanTab(run) {
+  if (!run.plan) {
+    document.querySelector("#plan-empty").hidden = false;
+    document.querySelector("#plan-body").hidden = true;
+    return;
+  }
+  document.querySelector("#plan-empty").hidden = true;
+  document.querySelector("#plan-body").hidden = false;
+  document.querySelector("#plan-goal").textContent = run.plan.goal;
+  document.querySelector("#plan-risk").textContent = run.plan.risk;
+  document.querySelector("#plan-risk").className = `risk-badge ${run.plan.risk}`;
+  
+  const steps = document.querySelector("#plan-steps");
+  steps.replaceChildren();
+  run.plan.steps.forEach(s => addText(steps, "li", s));
+
+  const accept = document.querySelector("#plan-acceptance");
+  accept.replaceChildren();
+  run.plan.acceptance.forEach(s => addText(accept, "li", s));
+
+  const fread = document.querySelector("#plan-files-read");
+  fread.replaceChildren();
+  run.plan.files_to_read.forEach(s => addText(fread, "li", s));
+
+  const fcreate = document.querySelector("#plan-files-create");
+  fcreate.replaceChildren();
+  run.plan.files_to_create.forEach(s => addText(fcreate, "li", s));
+
+  const reviewBox = document.querySelector("#review-box");
+  if (run.review) {
+    reviewBox.hidden = false;
+    document.querySelector("#review-status").textContent = run.review.status;
+    const rnotes = document.querySelector("#review-notes");
+    rnotes.replaceChildren();
+    run.review.notes.forEach(s => addText(rnotes, "li", s));
+  } else {
+    reviewBox.hidden = true;
+  }
+}
+
+function renderDiffTab(run) {
+  const fileSum = document.querySelector("#file-summary");
+  const diffView = document.querySelector("#diff-view");
+  fileSum.replaceChildren();
+  diffView.replaceChildren();
+
+  if (!run.files || run.files.length === 0) {
+    addText(fileSum, "li", "ไม่มีการเปลี่ยนแปลงไฟล์");
+    return;
+  }
+  
+  run.files.forEach(f => {
+    const li = document.createElement("li");
+    li.textContent = `${f.change.toUpperCase()}: ${f.path} (+${f.additions} -${f.deletions})`;
+    fileSum.append(li);
+  });
+
+  if (run.diff) {
+    const pre = document.createElement("pre");
+    pre.className = "diff-code";
+    // Basic diff syntax coloring
+    const lines = run.diff.split('\n');
+    lines.forEach(line => {
+      const span = document.createElement("span");
+      span.textContent = line + '\n';
+      if (line.startsWith("+") && !line.startsWith("+++")) span.className = "diff-add";
+      else if (line.startsWith("-") && !line.startsWith("---")) span.className = "diff-remove";
+      else if (line.startsWith("@@")) span.className = "diff-chunk";
+      pre.append(span);
+    });
+    diffView.append(pre);
+  }
+}
+
+function renderTestsTab(run) {
+  if (!run.tests) {
+    document.querySelector("#tests-empty").hidden = false;
+    document.querySelector("#tests-body").hidden = true;
+    return;
+  }
+  document.querySelector("#tests-empty").hidden = true;
+  document.querySelector("#tests-body").hidden = false;
+  const dl = document.querySelector("#tests-summary");
+  dl.replaceChildren();
+  
+  const addItem = (dt, dd) => {
+    addText(dl, "dt", dt);
+    addText(dl, "dd", dd);
+  };
+  addItem("Status", run.tests.status);
+  addItem("Command", run.tests.command || "-");
+  addItem("Isolation", run.tests.isolation || "-");
+  addItem("Attempts", (run.tests.attempts || 0).toString());
+  addItem("Duration", run.tests.duration_ms ? `${run.tests.duration_ms}ms` : "-");
+
+  document.querySelector("#tests-output").textContent = run.tests.output_tail || "No output";
+}
+
+function renderSecurityTab(run) {
+  const fList = document.querySelector("#findings-list");
+  fList.replaceChildren();
+  if (!run.findings || run.findings.length === 0) {
+    addText(fList, "li", "ไม่พบประเด็นความปลอดภัย");
+    return;
+  }
+  run.findings.forEach(f => {
+    const li = document.createElement("li");
+    li.className = `finding-item ${f.severity}`;
+    const head = document.createElement("div");
+    head.className = "finding-head";
+    addText(head, "span", f.severity.toUpperCase(), `finding-sev ${f.severity}`);
+    addText(head, "strong", f.rule);
+    if (f.cwe) addText(head, "span", f.cwe, "finding-cwe");
+    li.append(head);
+    const loc = f.path ? `${f.path}${f.line ? ':'+f.line : ''}` : "Global";
+    addText(li, "div", `${loc} — ${f.message}`, "finding-msg");
+    fList.append(li);
+  });
+}
+
+function renderComplianceTab(run) {
+  const tbody = document.querySelector("#compliance-body");
+  tbody.replaceChildren();
+  if (!run.compliance || run.compliance.length === 0) {
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 4;
+    td.textContent = "ไม่มีข้อมูล compliance";
+    tr.append(td);
+    tbody.append(tr);
+    return;
+  }
+  run.compliance.forEach(c => {
+    const tr = document.createElement("tr");
+    addText(tr, "td", c.control);
+    addText(tr, "td", c.framework);
+    addText(tr, "td", c.evidence);
+    addText(tr, "td", c.status, `status-${c.status}`);
+    tbody.append(tr);
+  });
+}
+
+function renderProvenanceTab(run) {
+  if (!run.deployment) {
+    document.querySelector("#provenance-empty").hidden = false;
+    document.querySelector("#provenance-body").hidden = true;
+    return;
+  }
+  document.querySelector("#provenance-empty").hidden = true;
+  document.querySelector("#provenance-body").hidden = false;
+  
+  const dl = document.querySelector("#provenance-hashes");
+  dl.replaceChildren();
+  addText(dl, "dt", "Manifest SHA256");
+  addText(dl, "dd", run.deployment.manifest_sha256);
+  addText(dl, "dt", "Signature");
+  const sigDd = document.createElement("dd");
+  sigDd.textContent = (run.deployment.signature || "").substring(0, 32) + "...";
+  const btn = addText(sigDd, "button", "Copy", "ghost-button small");
+  btn.onclick = () => navigator.clipboard.writeText(run.deployment.signature);
+  dl.append(sigDd);
+
+  const notes = document.querySelector("#deploy-notes");
+  notes.replaceChildren();
+  (run.deployment.notes || []).forEach(n => addText(notes, "li", n));
+
+  const rollback = document.querySelector("#rollback-steps");
+  rollback.replaceChildren();
+  (run.deployment.rollback || []).forEach(n => addText(rollback, "li", n));
+}
+
+function renderTokensTab(run) {
+  const grid = document.querySelector("#token-grid");
+  grid.replaceChildren();
+  if (!run.metrics) return;
+  const m = run.metrics;
+  const addItem = (label, val) => {
+    const d = document.createElement("div");
+    d.className = "kpi-card";
+    addText(d, "h4", label);
+    addText(d, "div", val, "kpi-value");
+    grid.append(d);
+  };
+  addItem("Total Tokens", m.total_tokens?.toLocaleString() || "0");
+  addItem("Prompt", m.prompt_tokens?.toLocaleString() || "0");
+  addItem("Completion", m.completion_tokens?.toLocaleString() || "0");
+  addItem("LLM Calls", m.llm_calls?.toLocaleString() || "0");
+  addItem("Savings %", m.token_savings_pct ? `${m.token_savings_pct.toFixed(1)}%` : "0%");
+  addItem("Cache Hits", m.cache_hits?.toLocaleString() || "0");
+}
+
+// Tabs Logic
+const tabs = document.querySelectorAll(".run-tab");
+const panels = document.querySelectorAll(".run-panel");
+
+tabs.forEach(tab => {
+  tab.addEventListener("click", () => {
+    tabs.forEach(t => {
+      t.setAttribute("aria-selected", "false");
+      t.tabIndex = -1;
+    });
+    panels.forEach(p => p.hidden = true);
+    
+    tab.setAttribute("aria-selected", "true");
+    tab.tabIndex = 0;
+    const panelId = tab.getAttribute("aria-controls");
+    document.getElementById(panelId).hidden = false;
+  });
+});
+
+async function refreshMetrics() {
+  try {
+    const res = await api("/api/metrics", null, "GET");
+    const kpi = document.querySelector("#kpi-grid");
+    kpi.replaceChildren();
+    const addItem = (label, val) => {
+      const d = document.createElement("div");
+      d.className = "kpi-card";
+      addText(d, "h4", label);
+      addText(d, "div", val, "kpi-value");
+      kpi.append(d);
+    };
+    addItem("Total Runs", res.runs_total?.toString() || "0");
+    addItem("Total Tokens", res.total_tokens?.toLocaleString() || "0");
+    addItem("Tokens Saved", res.tokens_saved_estimate?.toLocaleString() || "0");
+    addItem("Cache Hit Rate", res.cache_hit_rate !== null ? `${(res.cache_hit_rate * 100).toFixed(1)}%` : "-");
+    addItem("Test Pass Rate", res.test_pass_rate !== null ? `${(res.test_pass_rate * 100).toFixed(1)}%` : "-");
+
+    const bars = document.querySelector("#severity-bars");
+    bars.replaceChildren();
+    if (res.findings_by_severity) {
+      for (const [sev, count] of Object.entries(res.findings_by_severity)) {
+        if (count > 0) {
+          const b = document.createElement("div");
+          b.className = `sev-bar ${sev}`;
+          b.style.flex = count.toString();
+          b.title = `${sev}: ${count}`;
+          bars.append(b);
+        }
+      }
+    }
+  } catch(e) {}
+}
+
+async function refreshHistory() {
+  try {
+    const res = await api("/api/runs", null, "GET");
+    const list = document.querySelector("#history-list");
+    list.replaceChildren();
+    res.runs.forEach(r => {
+      const li = document.createElement("li");
+      const a = document.createElement("a");
+      a.href = "#";
+      a.className = "history-item";
+      a.onclick = (e) => {
+        e.preventDefault();
+        activeRunId = r.id;
+        startPolling();
+      };
+      addText(a, "strong", r.task.substring(0, 50) + (r.task.length > 50 ? "..." : ""));
+      addText(a, "span", `${r.status} · ${new Date(r.created_at).toLocaleString("th-TH")} · ${r.total_tokens || 0} tokens`, "history-meta");
+      li.append(a);
+      list.append(li);
+    });
+  } catch(e) {}
+}
+
+document.querySelector("#metrics-refresh")?.addEventListener("click", refreshMetrics);
+document.querySelector("#history-refresh")?.addEventListener("click", refreshHistory);
 
 fetch("/api/health")
   .then(async (response) => {
@@ -338,3 +664,5 @@ fetch("/api/health")
   });
 
 refreshDataset();
+refreshMetrics();
+refreshHistory();
