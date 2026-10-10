@@ -1,260 +1,109 @@
-# 🚀 Enterprise AI Coding Agent Platform
+# Forge — Local-only AI Coding Agent & Organization Q&A
 
-**Military-Grade Security | Full-Stack Automation | Enterprise-Ready**
+Forge is a local-first MVP with two workflows: review-gated code proposals for a repository, and question answering grounded in an administrator-imported organization CSV. Both workflows use a model running on the same computer through Ollama's local OpenAI-compatible API. The application rejects non-loopback model endpoints and redirects.
 
-Enterprise-level AI agent system that autonomously analyzes, plans, codes, reviews, tests, deploys, and monitors software with institutional-grade security and compliance.
+This is a single-user local prototype, **not** a production enterprise platform. It has no employee login or per-person access control and must not be shared with multiple employees or exposed to a network. It does not claim SOC 2, HIPAA, GDPR, ISO 27001, PCI DSS, FedRAMP, an SLA, or measured productivity/cost savings.
 
-## 🎯 Overview
+## Private organization Q&A
 
-A production-grade multi-agent AI system designed for organizations at Google, Apple, Microsoft, Cisco, and AWS scale. Replaces traditional development workflows with intelligent autonomous agents working in orchestration.
+1. Start the local Ollama model described below.
+2. Open Forge at <http://127.0.0.1:8000> and choose a UTF-8 `.csv` file containing data you are authorized to process.
+3. Ask a focused question. Forge retrieves a bounded set of matching rows and sends that context only to Ollama on `127.0.0.1`.
+4. Review citations to the original CSV row numbers. Remove the local dataset when you no longer need it.
 
-**Key Metrics:**
-- ⚡ 62% reduction in development time
-- 🔒 Military-grade encryption (AES-256, end-to-end)
-- 🛡️ SOC2 Type II, HIPAA, GDPR, ISO 27001 compliant
-- 📊 99.99% SLA uptime
-- 💰 $50M+ annual savings potential for enterprise
+The CSV is stored in a local SQLite file with owner-only file permissions. The MVP refuses columns that appear to contain highly sensitive data (such as salary, bank, health, government-ID, address, or phone fields), limits imports to 1.5 MB, 5,000 rows, 30 columns, 500 characters per cell, and limits model context to 25 matching records/16,000 characters. Pattern-based header checks are not a full data-classification system. The database is **not encrypted by Forge**; enable FileVault/full-disk encryption and protect the account on the Mac.
 
-## 🤖 Multi-Agent System
+The model is instructed to cite source rows and not invent unsupported facts. Retrieval is simple local keyword matching—not semantic search—and larger datasets can produce an incomplete sample. Treat answers as suggestions and check the source records before acting on them.
 
-### **7 Core Agents Working in Orchestration:**
+Example UTF-8 CSV header and synthetic row:
 
-```
-┌─────────────────────────────────────────────────────────┐
-│              MULTI-AGENT INTELLIGENCE ENGINE            │
-└─────────────────────────────────────────────────────────┘
-
-1️⃣  PLANNER AGENT
-    ├─ Analyze issue deeply
-    ├─ Break into subtasks
-    ├─ Estimate complexity & risk
-    ├─ Check dependencies
-    └─ Generate execution blueprint
-
-2️⃣  CONTEXT AGENT
-    ├─ Load codebase architecture
-    ├─ Find related files
-    ├─ Learn git history patterns
-    ├─ Identify similar past fixes
-    └─ Extract team conventions
-
-3️⃣  CODER AGENT
-    ├─ Generate multiple solutions
-    ├─ Rank by quality metrics
-    ├─ Write production-grade code
-    ├─ Add comprehensive documentation
-    └─ Ensure 40+ quality checks
-
-4️⃣  TESTER AGENT
-    ├─ Generate unit tests
-    ├─ Generate integration tests
-    ├─ Generate e2e tests
-    ├─ Cover edge cases
-    └─ Achieve 80%+ coverage
-
-5️⃣  SECURITY AGENT
-    ├─ OWASP Top 10 scanning
-    ├─ Dependency vulnerability check
-    ├─ Secret detection
-    ├─ Permission validation
-    └─ Compliance verification
-
-6️⃣  REVIEWER AGENT
-    ├─ Code style analysis
-    ├─ Performance impact assessment
-    ├─ Architecture validation
-    ├─ Business logic verification
-    └─ Auto-approve safe changes
-
-7️⃣  DEPLOYER AGENT
-    ├─ Canary deployment
-    ├─ Real-time metrics monitoring
-    ├─ Auto-rollback capability
-    ├─ Team notifications
-    └─ Post-deployment validation
-
-8️⃣  MONITOR AGENT
-    ├─ Production monitoring
-    ├─ Anomaly detection
-    ├─ Auto-incident creation
-    ├─ Regression detection
-    └─ Predictive alerts
+```csv
+employee_id,name,team,role
+E-001,Example Person,Support,Engineer
 ```
 
-## 🔐 Security Architecture
+The local audit trail records import/clear events and counts of cited sources, not questions, CSV contents, or employee names. It does not identify a person; this prototype assumes a single authorized local administrator.
 
-### **Enterprise Security Features:**
-- ✅ **AES-256 Encryption** - All data at rest and in transit
-- ✅ **End-to-End Encryption** - Messages between agents
-- ✅ **OAuth2 + MFA** - Multi-factor authentication
-- ✅ **Role-Based Access Control (RBAC)** - Fine-grained permissions
-- ✅ **Immutable Audit Logs** - Complete traceability
-- ✅ **Secret Scanning** - Automatic credential detection
-- ✅ **OWASP Compliance** - Top 10 protection
-- ✅ **Threat Detection** - ML-based anomaly detection
-- ✅ **Air-Gap Deployment** - Isolated on-prem option
+## Install the local model
 
-### **Compliance Certifications:**
-- ✅ SOC2 Type II
-- ✅ HIPAA compliant
-- ✅ GDPR ready
-- ✅ ISO 27001 aligned
-- ✅ PCI DSS compatible
-- ✅ FedRAMP eligible
+Install Ollama for macOS using the official Ollama application, then open Terminal. Downloading an approved model requires internet access once; **Forge does not send your CSV, questions, or source code to the internet or to the model publisher**.
 
-## 📊 Scalability & Performance
-
-- **Handle 1000+ repositories** simultaneously
-- **Process 100+ issues/day** per deployment
-- **<30 second** task completion for simple jobs
-- **Auto-scaling** across Kubernetes clusters
-- **Cost optimization** per PR generated
-- **Multi-region** deployment support
-
-## 💼 Enterprise Features
-
-| Feature | Details |
-|---------|---------|
-| **Team Management** | Unlimited teams, custom roles, hierarchies |
-| **Usage Analytics** | Real-time dashboards, cost tracking, ROI |
-| **Integrations** | 50+ tools (Jira, Slack, Teams, Datadog, etc.) |
-| **Custom Workflows** | Define your own agent pipelines |
-| **White-Label** | Rebrand as your own product |
-| **API** | GraphQL + REST for full extensibility |
-| **On-Premise** | Self-hosted deployment option |
-| **SLA Guarantee** | 99.99% uptime with compensation |
-
-## 🏗️ Tech Stack
-
-### **Backend:**
-- FastAPI (Python 3.11+)
-- PostgreSQL (data)
-- Redis (cache)
-- Apache Kafka (event streaming)
-- LLM Integration (OpenAI/Anthropic/Local)
-
-### **Frontend:**
-- React 18 (dashboard)
-- TypeScript (type-safe)
-- Tailwind CSS (UI)
-- GraphQL (data layer)
-- Real-time WebSockets
-
-### **Infrastructure:**
-- Docker & Kubernetes
-- Terraform (IaC)
-- GitHub Actions (CI/CD)
-- Prometheus + Grafana (monitoring)
-- ELK Stack (logging)
-
-### **Security:**
-- HashiCorp Vault (secrets)
-- OpenSSL (encryption)
-- OWASP Security Headers
-- Rate limiting & DDoS protection
-
-## 🚀 Quick Start
-
-### **Local Development:**
 ```bash
-# Clone repository
-git clone https://github.com/tonktonk99/enterprise-ai-agent.git
-cd enterprise-ai-agent
-
-# Setup environment
-cp .env.example .env
-nano .env  # Configure your settings
-
-# Start services
-docker-compose up -d
-
-# Initialize database
-python scripts/init_db.py
-
-# Run agents
-python main.py
-
-# Access dashboard
-open http://localhost:3000
+ollama pull qwen2.5:3b
 ```
 
-### **Production Deployment:**
+If Ollama is not already running in the background, start it in a separate Terminal:
+
 ```bash
-# Using Kubernetes
-kubectl apply -f kubernetes/namespace.yaml
-kubectl apply -f kubernetes/secrets.yaml
-kubectl apply -f kubernetes/deployment.yaml
-
-# Using Terraform
-cd infrastructure/terraform
-terraform init
-terraform plan
-terraform apply
+ollama serve
 ```
 
-## 📈 Business Model
+Keep that Terminal open. Verify the model is installed with:
 
-### **ROI Calculator:**
-```
-Before (Traditional):
-├─ Senior Dev: $150K/year
-├─ Junior Dev: $80K/year
-├─ QA: $70K/year
-├─ DevOps: $120K/year
-└─ Manager: $30K/year
-= $450K per team
-
-After (AI Agent):
-├─ Junior Dev: $80K/year
-├─ Manager: $30K/year
-├─ AI Agent License: $12K/dev/year (100 devs = $1.2M)
-└─ Support: $5K/year
-= $177K per team (62% savings!)
+```bash
+ollama list
 ```
 
-### **Pricing Tiers:**
-- **Starter:** $5K/month (up to 10 devs)
-- **Professional:** $50K/month (up to 50 devs)
-- **Enterprise:** Custom (1000+ devs, on-prem, SLA)
+Choose a different already-installed local model with `AI_MODEL`. Larger models may require more memory. Do not use Ollama Cloud or another remote/cloud model; Forge rejects model names marked `cloud` or `remote`.
 
-## 📚 Documentation
+## Start Forge
 
-- [Architecture Guide](docs/architecture.md)
-- [API Reference](docs/api.md)
-- [Security Guide](docs/security.md)
-- [Deployment Guide](docs/deployment.md)
-- [Configuration Guide](docs/configuration.md)
-- [Business Model](docs/business-model.md)
+Requires Python 3.11 or newer. From the Forge repository root:
 
-## 🧪 Testing & Quality
+```bash
+AGENT_WORKSPACE_ROOT="/absolute/path/to/repository-to-edit" \
+AGENT_PORT=8000 \
+python3 run.py
+```
 
-- **Unit Tests:** 90%+ coverage
-- **Integration Tests:** All critical paths
-- **Security Tests:** OWASP + dependency scanning
-- **Performance Tests:** Load testing (1000+ concurrent)
-- **E2E Tests:** Full workflow validation
+Open <http://127.0.0.1:8000>. No cloud API key is needed. If port 8000 is busy, use `AGENT_PORT=8001` and open <http://127.0.0.1:8001>. The server only binds loopback.
 
-## 🤝 Contributing
+## Local configuration
 
-See [CONTRIBUTING.md](CONTRIBUTING.md)
+| Variable | Default | Purpose |
+|---|---|---|
+| `AGENT_WORKSPACE_ROOT` | Current directory | Repository the coding agent may inspect and, after approval, modify |
+| `AGENT_HOST` | `127.0.0.1` | Loopback addresses only; remote binding is refused |
+| `AGENT_PORT` | `8000` | Local web port |
+| `AI_BASE_URL` | `http://127.0.0.1:11434/v1` | Local model endpoint; external hosts and redirects are blocked |
+| `AI_MODEL` | `qwen2.5:3b` | Model name served by local Ollama |
+| `AI_API_KEY` | unset | Optional credential for a local model server only |
+| `AI_MAX_TOKENS` | `1800` | Coding-agent completion cap (256–4096) |
+| `ORG_DATA_DB` | `~/.local/share/enterprise-ai-agent/org-data.sqlite3` | Local organization CSV database |
+| `AGENT_AUDIT_DB` | `~/.local/share/enterprise-ai-agent/audit.sqlite3` | Local hash-chained audit database |
 
-## 📄 License
+Do not set `AI_BASE_URL` to a cloud provider. Forge refuses non-local model endpoints even if configured, refuses model names marked `cloud`/`remote`, and does not follow model-server redirects. The computer/Ollama installation must still be managed to ensure it serves the downloaded local model.
 
-Apache 2.0 - See [LICENSE](LICENSE)
+## Coding-agent safeguards
 
-## 👥 Team
+- **One-pass workflow:** one local model request plans, drafts, reviews, and proposes tests/deployment notes.
+- **Bounded context:** at most five relevant text files/12,000 characters; common generated directories and files that trigger secret patterns are skipped.
+- **Review before write:** inspect a proposal before explicitly approving it. Unsafe paths, symlinks, stale files, and likely credentials are rejected.
+- **No hidden execution:** generated code and suggested tests are not executed; deployment is never automated.
+- **Local protections:** loopback-only HTTP service, cross-origin checks, request/file-size bounds, browser security headers, owner-only local SQLite files, and audit-chain verification at `GET /api/audit/verify`.
 
-Built by enterprise architects and security experts for organizations at scale.
+Secret detection is pattern-based and cannot guarantee that every sensitive value is caught. File replacements are atomic individually, not as one multi-file transaction. Keep backups and version control enabled.
 
-## 📞 Support
+## Workflow and safeguards
 
-- **Enterprise Support:** support@enterprise-ai-agent.com
-- **Documentation:** docs.enterprise-ai-agent.com
-- **Community:** GitHub Discussions
-- **SLA:** 99.99% uptime guarantee
+1. Describe one scoped code change or ask a focused question about the imported local data.
+2. Forge selects bounded context and queries the local model only.
+3. Review source citations for organization answers or inspect the coding proposal and security findings.
+4. Explicitly approve a coding proposal before Forge writes it. Organization data can be removed from the local store from the UI.
+5. Run tests and inspect the resulting diff yourself; Forge does not execute generated code.
 
----
+Code writes are limited to eight regular text files, each at most 256 KiB. The coding audit database stores task IDs, event names, status, and file counts—not prompts, code, or credentials. The local audit hash chain can make accidental edits detectable, but a local administrator can still alter the database; it is not an immutable compliance log.
 
-**Ready to transform your development workflow?**
+## Run tests
 
-🚀 [Get Started](docs/deployment.md) | 📖 [Documentation](docs/) | 💼 [Pricing](docs/pricing.md)
+```bash
+python -m unittest discover -s tests -v
+```
+
+## Roadmap before production
+
+Before multi-user or production use, add authenticated identity and role-scoped access to each dataset, tenant isolation, encryption-at-rest/key management, policy-based approvals, isolated execution sandboxes, signed/provenance-tracked patches, a protected audit pipeline, data-classification controls, independent security reviews, backups, and the relevant compliance audits. Do not expose this prototype to a network or describe it as certified.
+
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE).

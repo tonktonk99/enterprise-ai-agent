@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <meta name="theme-color" content="#f5f6f8">
+    <title>Forge — AI Coding Agent</title>
+    <link rel="stylesheet" href="/assets/style.css">
+    <script src="/assets/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="/" aria-label="Forge หน้าหลัก">
+          <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+          <span class="brand-name">forge<span class="brand-period">.</span><small>AI SOFTWARE ENGINEER</small></span>
+        </a>
+
+        <div class="workspace-label">WORKSPACE</div>
+        <div class="workspace-card">
+          <span class="repo-icon" aria-hidden="true">⌘</span>
+          <span class="workspace-details"><strong id="workspace-name">กำลังเชื่อมต่อ…</strong><small>Local repository</small></span>
+          <span class="workspace-chevron" aria-hidden="true">⌄</span>
+        </div>
+
+        <div class="nav-caption">เครื่องมือ</div>
+        <nav class="navigation" aria-label="เมนูหลัก">
+          <a class="nav-item active" href="#overview" aria-current="page"><span class="nav-symbol">⌂</span> ภาพรวม <span class="nav-current"></span></a>
+          <a class="nav-item" href="#workflow"><span class="nav-symbol">✳</span> เริ่มงานใหม่</a>
+          <a class="nav-item" href="#security"><span class="nav-symbol">◈</span> ความปลอดภัย</a>
+        </nav>
+
+        <div class="sidebar-bottom">
+          <section class="approval-card">
+            <div class="approval-card-top"><span class="approval-card-icon">✓</span><span>คุณเป็นคนตัดสินใจ</span></div>
+            <p>Agent เสนอการเปลี่ยนแปลงให้ตรวจก่อนเสมอ จะไม่แก้ไฟล์หรือ deploy เอง</p>
+          </section>
+          <div class="sidebar-footer"><span class="local-indicator"></span><span>ทำงานบนเครื่องของคุณ</span><span class="version">MVP</span></div>
+        </div>
+      </aside>
+
+      <main class="main" id="overview">
+        <header class="topbar">
+          <div class="breadcrumb"><span>Workspace</span><span class="breadcrumb-divider">/</span><strong>Agent console</strong></div>
+          <div class="topbar-right">
+            <div class="repo-pill"><span class="repo-pill-dot"></span><span id="provider-status">กำลังตรวจสอบโมเดล</span></div>
+            <span class="topbar-divider"></span>
+            <span class="user-avatar" aria-label="ผู้ใช้">A</span>
+          </div>
+        </header>
+
+        <div class="page-content">
+          <section class="hero">
+            <div class="hero-copy">
+              <div class="eyebrow"><span class="eyebrow-spark">✳</span> YOUR AI ENGINEERING PARTNER</div>
+              <h1>ไอเดียของคุณ<br><span>พร้อมเป็นโค้ดแล้ว</span></h1>
+              <p>บอกสิ่งที่อยากสร้าง Forge จะช่วยวางแผน เขียน และตรวจโค้ด<br class="desktop-break">ให้คุณพิจารณาก่อนนำไปใช้จริง</p>
+            </div>
+            <div class="hero-art" aria-hidden="true">
+              <div class="energy-field"></div>
+              <span class="energy-particle particle-one"></span>
+              <span class="energy-particle particle-two"></span>
+              <span class="energy-particle particle-three"></span>
+              <div class="orbit orbit-outer"></div>
+              <div class="orbit orbit-inner"></div>
+              <div class="orbit-core">
+                <span class="core-aura"></span>
+                <span class="core-sphere"><span class="core-spark">✳</span></span>
+              </div>
+              <span class="orbit-node node-plan">01 <i>Plan</i></span>
+              <span class="orbit-node node-build">02 <i>Build</i></span>
+              <span class="orbit-node node-review">03 <i>Review</i></span>
+              <span class="orbit-dot"></span>
+            </div>
+            <div class="hero-note"><span class="hero-note-icon">◈</span><span>คุณอนุมัติทุกการเปลี่ยนแปลง</span></div>
+          </section>
+
+          <section class="workflow-strip" id="workflow" aria-label="ขั้นตอนการทำงาน">
+            <div class="workflow-step"><span class="step-number step-active">01</span><span><strong>บอกสิ่งที่ต้องการ</strong><small>อธิบายงานสั้น ๆ</small></span></div>
+            <span class="step-connector"></span>
+            <div class="workflow-step"><span class="step-number">02</span><span><strong>ตรวจข้อเสนอ</strong><small>อ่านแผนและโค้ด</small></span></div>
+            <span class="step-connector"></span>
+            <div class="workflow-step"><span class="step-number">03</span><span><strong>อนุมัติก่อนใช้</strong><small>คุณควบคุมเอง</small></span></div>
+          </section>
+
+          <section id="org-chat" class="org-chat">
+            <div class="org-chat-heading">
+              <div class="org-chat-title">
+                <span class="org-chat-icon">⌕</span>
+                <div><span class="section-kicker">PRIVATE KNOWLEDGE · LOCAL AI</span><h2>ถามข้อมูลในองค์กร</h2></div>
+              </div>
+              <span class="admin-only"><span></span> ผู้ดูแล · เครื่องนี้เท่านั้น</span>
+            </div>
+            <p class="org-chat-description">นำเข้า CSV ที่ได้รับอนุญาต แล้วถามคำถามจากข้อมูลโดยตรง ไฟล์และคำถามจะอยู่ในเครื่องนี้ ไม่ส่งไป AI ภายนอก</p>
+            <div class="dataset-bar">
+              <div class="dataset-summary"><span class="dataset-icon">▤</span><div><strong id="dataset-status">ยังไม่มีชุดข้อมูล</strong><small id="dataset-detail">เริ่มจากไฟล์ CSV ที่คุณมีสิทธิ์ใช้งาน</small></div></div>
+              <div class="dataset-actions">
+                <input id="csv-input" type="file" accept=".csv,text/csv" hidden>
+                <button id="import-button" class="import-button" type="button">เลือกไฟล์ CSV</button>
+                <button id="clear-data-button" class="clear-data-button" type="button" hidden>ลบข้อมูลในเครื่อง</button>
+              </div>
+            </div>
+            <div id="allowed-fields" class="allowed-fields" hidden></div>
+            <div class="question-composer">
+              <label class="sr-only" for="org-question">ถามข้อมูลภายในองค์กร</label>
+              <textarea id="org-question" maxlength="2000" placeholder="เช่น ทีมใดทำงานด้าน support? ค้นชื่อทีมหรือบทบาทจากไฟล์ที่นำเข้า…" disabled></textarea>
+              <div class="question-composer-footer">
+                <span><span class="local-lock">◈</span> คำตอบจะแสดงแหล่งอ้างอิง · ตรวจสอบสิทธิ์ข้อมูลก่อนนำเข้า</span>
+                <button id="ask-button" class="ask-button" type="button" disabled>ถาม AI ภายใน <span>→</span></button>
+              </div>
+            </div>
+            <article id="qa-answer" class="qa-answer" hidden aria-live="polite">
+              <div class="answer-heading"><span class="answer-avatar">✳</span><div><strong>Forge · ตอบจากข้อมูลในเครื่อง</strong><small>คำตอบจากแถวที่ค้นพบเท่านั้น</small></div></div>
+              <p id="answer-text"></p>
+              <div id="answer-caveat" class="answer-caveat" hidden>ค้นเฉพาะบางแถวที่เกี่ยวข้อง คำตอบนี้อาจไม่ครอบคลุมทุกคนหรือทุกทีม</div>
+              <div id="answer-sources" class="answer-sources"></div>
+            </article>
+            <div class="org-chat-footnote"><span>ⓘ</span> MVP สำหรับผู้ดูแลหนึ่งคน · ไม่ใช่ระบบบัญชีผู้ใช้หรือการควบคุมสิทธิ์ระดับองค์กร</div>
+          </section>
+
+          <section class="task-section">
+            <div class="section-title">
+              <div><span class="section-kicker">LET'S MAKE SOMETHING</span><h2>วันนี้อยากให้ Forge ช่วยอะไร?</h2></div>
+              <span class="task-limit">สูงสุด 3,000 ตัวอักษร</span>
+            </div>
+            <div class="composer">
+              <label class="sr-only" for="task-input">รายละเอียดงานที่ต้องการ</label>
+              <textarea id="task-input" maxlength="3000" placeholder="เช่น เพิ่มระบบตรวจสอบอีเมลในหน้าสมัครสมาชิก พร้อมเสนอ test cases สำหรับข้อมูลที่ไม่ถูกต้อง…"></textarea>
+              <div class="composer-bottom">
+                <div class="composer-meta"><span class="composer-safe-icon">◈</span><span>ส่งเฉพาะไฟล์โค้ดที่เลือกให้โมเดลในเครื่อง</span><span class="meta-separator">·</span><span id="character-count">0 / 3,000</span></div>
+                <button id="run-button" class="primary-button"><span class="button-spark">✳</span><span>ให้ Forge เริ่มทำงาน</span><span class="button-arrow">→</span></button>
+              </div>
+            </div>
+            <div class="prompt-suggestions"><span class="suggestion-label">ลองเริ่มจาก</span><button class="suggestion-chip" type="button" data-prompt="ช่วยสำรวจโครงสร้างโปรเจกต์ และแนะนำจุดที่ควรปรับปรุง 3 ข้อ โดยยังไม่แก้ไฟล์">สำรวจโปรเจกต์</button><button class="suggestion-chip" type="button" data-prompt="ช่วยเพิ่มการตรวจสอบข้อมูลในฟอร์มที่มีอยู่ พร้อมเสนอ test cases สำหรับกรณีปกติและกรณีผิดพลาด">เพิ่ม validation</button><button class="suggestion-chip" type="button" data-prompt="ช่วยตรวจหา bug ที่เกี่ยวข้องกับงานนี้ เสนอวิธีแก้ที่กระทบไฟล์น้อยที่สุด พร้อมเสนอการทดสอบ">ช่วยหา bug</button></div>
+          </section>
+
+          <div id="error-banner" class="error-banner" role="alert" hidden></div>
+
+          <section id="result-section" class="result-section" aria-live="polite" hidden>
+            <div class="result-title">
+              <div><span class="section-kicker">YOUR REVIEW QUEUE</span><h2>ข้อเสนอจาก Forge</h2><p id="result-summary"></p></div>
+              <span id="proposal-status" class="proposal-status"></span>
+            </div>
+            <div class="result-grid">
+              <article class="result-card">
+                <div class="card-heading"><span class="card-icon plan-icon">01</span><div><h3>แผนการทำงาน</h3><p>สิ่งที่ agent ตั้งใจจะทำ</p></div><span class="agent-role">PLANNER</span></div>
+                <ol id="plan-list" class="plan-list"></ol>
+              </article>
+              <article class="result-card">
+                <div class="card-heading"><span class="card-icon security-icon">◈</span><div><h3>ตรวจสอบความปลอดภัย</h3><p>ผลจากการตรวจเบื้องต้น</p></div><span class="agent-role">SECURITY</span></div>
+                <div id="security-list" class="security-list"></div>
+                <div id="context-stats" class="context-stats"></div>
+              </article>
+            </div>
+            <article class="result-card changes-card">
+              <div class="card-heading changes-heading"><div class="changes-heading-copy"><span class="card-icon code-icon">{ }</span><div><h3>ไฟล์ที่เสนอให้เปลี่ยน</h3><p id="file-count"></p></div></div><span class="agent-role">CODER · REVIEWER</span></div>
+              <div id="file-list" class="file-list"></div>
+            </article>
+            <div class="result-grid secondary-grid">
+              <article class="result-card">
+                <div class="card-heading"><span class="card-icon test-icon">✓</span><div><h3>ข้อเสนอการทดสอบ</h3><p>ยังไม่ได้รันทดสอบจริง</p></div><span class="agent-role">TESTER</span></div>
+                <ul id="tests-list" class="plain-list"></ul>
+              </article>
+              <article class="result-card">
+                <div class="card-heading"><span class="card-icon next-icon">↗</span><div><h3>ขั้นตอนถัดไป</h3><p>คุณเป็นผู้สั่ง deploy เอง</p></div><span class="agent-role">NEXT STEPS</span></div>
+                <ul id="deploy-list" class="plain-list"></ul>
+              </article>
+            </div>
+            <div class="apply-bar"><div><strong>ตรวจโค้ดทุกไฟล์ก่อนยืนยัน</strong><span>Forge จะไม่รันโค้ดหรือ deploy โดยอัตโนมัติ</span></div><button id="apply-button" class="approve-button" disabled>อนุมัติและนำไปใช้ <span>→</span></button></div>
+          </section>
+
+          <section id="security" class="trust-panel">
+            <span class="trust-icon">◈</span>
+            <div><strong>ปลอดภัยด้วยการออกแบบ ไม่ใช่คำโฆษณา</strong><p>ทำงานบนเครื่องคุณ · คัดกรอง secret ที่ตรวจพบ · ตรวจ path ก่อนเขียนไฟล์ · ต้องอนุมัติก่อนทุกครั้ง</p></div>
+            <span class="trust-tag">LOCAL FIRST</span>
+          </section>
+          <footer class="page-footer"><span>FORGE <b>·</b> AI CODING AGENT</span><span>ต้นแบบสำหรับทดลองใช้งาน ไม่ใช่การรับรอง compliance</span></footer>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
